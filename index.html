@@ -643,29 +643,25 @@ async function uploadToCloudinary(file, onProgress) {
 }
 
 // CLOUDINARY NATIVE WATERMARK
-// Transforms URL to include tiled text watermark rendered by Cloudinary
-// Example: .../upload/v123/img.jpg → .../upload/<wm_params>/v123/img.jpg
+// Correct syntax per Cloudinary docs:
+// l_text:font_size:text — opens the text layer
+// a_-25,o_25,co_white,w_0.5,fl_relative — transform the layer
+// fl_tiled.layer_apply — tile + close the layer (must be in same component)
 function applyCloudinaryWatermark(url) {
-  // Watermark params: tiled text, 30% opacity, diagonal, medium size
-  const wm = [
-    'l_text:Arial_28_bold:Henricco%20Moretti',  // text + font + size
-    'co_white',            // color white
-    'o_25',               // 25% opacity
-    'a_-30',              // -30 degree rotation
-    'fl_tiled',           // tile across whole image
-    'fl_layer_apply'      // apply the layer
-  ].join(',');
+  if (!url || !url.includes('res.cloudinary.com')) return url;
+  if (url.includes('fl_tiled')) return url; // already applied
 
-  // Insert watermark params after /upload/
-  return url.replace('/upload/', '/upload/' + wm + '/');
+  // Step 1: open text layer with styling
+  const layer = 'l_text:Arial_26_bold:Henricco%20Moretti,co_white,o_25,a_-25,w_0.5,fl_relative';
+  // Step 2: tile + apply in same component
+  const apply = 'fl_tiled.layer_apply';
+
+  return url.replace('/upload/', `/upload/${layer}/${apply}/`);
 }
 
-// Also transform existing stored URLs when rendering
+// Wrap for use in rendering
 function wmUrl(url) {
   if (!url) return url;
-  // Already has watermark
-  if (url.includes('fl_tiled')) return url;
-  // Only transform Cloudinary URLs
   if (!url.includes('res.cloudinary.com')) return url;
   return applyCloudinaryWatermark(url);
 }
