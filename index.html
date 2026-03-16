@@ -235,6 +235,24 @@ footer p{font-size:.75rem;color:rgba(232,216,192,.35);letter-spacing:.06em}
 .adm-tab-content{display:none}
 .adm-tab-content.active{display:block}
 
+/* MULTI UPLOAD QUEUE */
+.upload-queue{display:flex;flex-direction:column;gap:.5rem;margin-bottom:1.2rem}
+.queue-item{display:flex;align-items:center;gap:.8rem;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:.6rem .9rem}
+.queue-thumb{width:44px;height:44px;object-fit:cover;border-radius:3px;flex-shrink:0}
+.queue-info{flex:1;min-width:0}
+.queue-name{font-size:.8rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.queue-status{font-size:.72rem;color:var(--terra);margin-top:.15rem}
+.queue-status.done{color:#4caf50}
+.queue-status.error{color:#e05050}
+.queue-status.sending{color:var(--rust)}
+.queue-bar{height:3px;background:var(--border);border-radius:2px;margin-top:.3rem;overflow:hidden}
+.queue-bar-fill{height:100%;background:var(--rust);width:0%;transition:width .3s;border-radius:2px}
+.queue-badge{font-size:.65rem;padding:.2rem .6rem;border-radius:2rem;background:rgba(196,86,42,.12);color:var(--rust);flex-shrink:0}
+.queue-badge.done{background:rgba(76,175,80,.12);color:#4caf50}
+.queue-badge.error{background:rgba(224,80,80,.12);color:#e05050}
+.queue-header{display:flex;align-items:center;gap:1rem;padding:.8rem 1rem;background:rgba(196,86,42,.06);border:1px solid var(--border-accent);border-radius:6px;flex-wrap:wrap}
+.queue-item-full{padding:1rem;flex-direction:column}
+
 /* ORDER DRAG LIST */
 .order-actions-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:.8rem}
 .order-apply-btn{background:var(--rust);color:#FFFDF9;border:none;border-radius:4px;padding:.65rem 1.8rem;font-family:'DM Sans',sans-serif;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:background .2s}
@@ -412,16 +430,13 @@ footer p{font-size:.75rem;color:rgba(232,216,192,.35);letter-spacing:.06em}
 
       <div class="upload-zone" id="addUploadZone">
         <div class="upload-zone-icon">✦</div>
-        <p class="upload-zone-title">Clique ou arraste a imagem aqui</p>
-        <p class="upload-zone-sub">PNG, JPG, WEBP — enviada para o Cloudinary</p>
+        <p class="upload-zone-title">Clique ou arraste as imagens aqui</p>
+        <p class="upload-zone-sub">PNG, JPG, WEBP — selecione várias de uma vez!</p>
       </div>
+      <div class="upload-queue" id="uploadQueue" style="display:none;"></div>
       <div id="addProgWrap" style="display:none;margin-bottom:1rem;">
         <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:.4rem;"><div id="addProgFill" style="height:100%;background:var(--rust);width:0%;transition:width .3s;border-radius:3px;"></div></div>
         <p id="addProgLabel" style="font-size:.75rem;color:var(--terra);text-align:center;">Enviando...</p>
-      </div>
-      <div class="img-preview-wrap" id="addPreviewWrap">
-        <img id="addPreviewImg" alt="Preview">
-        <p class="upload-zone-info" id="addSizeInfo"></p>
       </div>
 
       <div class="adm-form-grid">
@@ -457,7 +472,7 @@ footer p{font-size:.75rem;color:rgba(232,216,192,.35);letter-spacing:.06em}
         </div>
       </div>
 
-      <button class="btn-primary" id="addBtn">Adicionar Estampa ao Portfólio</button>
+      <button class="btn-primary" id="addBtn" style="background:var(--terra);margin-top:.5rem;">✕ Limpar fila e resetar</button>
     </div>
 
     </div><!-- end tab-add -->
@@ -799,7 +814,8 @@ async function doLogin() {
 // ADM
 function openAdm() {
   pendingAddUrl=null;
-  document.getElementById('addPreviewWrap').style.display='none';
+  uploadQueue=[];isUploading=false;
+  document.getElementById('uploadQueue').style.display='none';
   document.getElementById('addName').value='';
   document.getElementById('addSubtitle').value='';
   document.getElementById('addColName').value='';
@@ -812,76 +828,213 @@ function openAdm() {
 }
 document.getElementById('admCloseBtn').addEventListener('click',()=>document.getElementById('admPanel').classList.remove('open'));
 
-// ADD FILE — trigger hidden input on zone click
+// MULTI-UPLOAD — hybrid queue system
+// 1. User sets common tags/collection/subtitle BEFORE uploading
+// 2. Files upload automatically, each gets an individual edit form
+// 3. User edits name/tags per item, then clicks "Salvar todas"
+
 const addFileInput = document.createElement('input');
-addFileInput.type = 'file'; addFileInput.accept = 'image/*'; addFileInput.style.display = 'none';
+addFileInput.type = 'file';
+addFileInput.accept = 'image/*';
+addFileInput.multiple = true;
+addFileInput.style.display = 'none';
 document.body.appendChild(addFileInput);
-document.getElementById('addUploadZone').addEventListener('click', () => addFileInput.click());
+
+let uploadQueue = []; // {file, name, url, status, tags, subtitle, colName, colCover}
+let isUploading = false;
+
+document.getElementById('addUploadZone').addEventListener('click', () => { addFileInput.value=''; addFileInput.click(); });
 document.getElementById('addUploadZone').addEventListener('dragover', e => { e.preventDefault(); document.getElementById('addUploadZone').classList.add('dragover'); });
 document.getElementById('addUploadZone').addEventListener('dragleave', () => document.getElementById('addUploadZone').classList.remove('dragover'));
 document.getElementById('addUploadZone').addEventListener('drop', e => {
-  e.preventDefault(); document.getElementById('addUploadZone').classList.remove('dragover');
-  const file = e.dataTransfer.files[0];
-  if (file && file.type.startsWith('image/')) handleAddFile(file);
+  e.preventDefault();
+  document.getElementById('addUploadZone').classList.remove('dragover');
+  const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+  if (files.length) addFilesToQueue(files);
 });
 addFileInput.addEventListener('change', e => {
-  if (e.target.files[0]) handleAddFile(e.target.files[0]);
-  addFileInput.value = ''; // reset so same file can be selected again
+  const files = Array.from(e.target.files);
+  if (files.length) addFilesToQueue(files);
+  addFileInput.value = '';
 });
 
-async function handleAddFile(file) {
-  const zone = document.getElementById('addUploadZone');
-  const addBtn = document.getElementById('addBtn');
-  const progWrap = document.getElementById('addProgWrap');
-  const progFill = document.getElementById('addProgFill');
-  const progLabel = document.getElementById('addProgLabel');
-  addBtn.disabled = true;
-  progWrap.style.display = 'block';
-  zone.querySelector('.upload-zone-title').textContent = 'Enviando...';
-  try {
-    const url = await uploadToCloudinary(file, (pct, msg) => {
-      progFill.style.width = pct + '%';
-      progLabel.textContent = msg;
+function addFilesToQueue(files) {
+  // Snapshot common settings at time of selection
+  const commonTags    = getChecked('addTagsWrap');
+  const commonSub     = document.getElementById('addSubtitle').value.trim();
+  const commonColName = document.getElementById('addColName').value.trim() || 'Sem nome';
+  const commonCover   = document.getElementById('addColCover').value;
+
+  files.forEach((file, i) => {
+    const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g,' ');
+    uploadQueue.push({
+      file, url: null, status: 'waiting',
+      name: cleanName,
+      tags: [...commonTags],
+      subtitle: commonSub,
+      colName: commonColName,
+      colCover: i===0 ? commonCover : 'no'
     });
-    pendingAddUrl = url;
-    document.getElementById('addPreviewWrap').style.display = 'block';
-    document.getElementById('addPreviewImg').src = url;
-    document.getElementById('addSizeInfo').textContent = '✦ Imagem enviada!';
-    zone.querySelector('.upload-zone-title').textContent = 'Imagem enviada! Clique para trocar.';
-    setTimeout(() => { progWrap.style.display = 'none'; }, 1500);
-  } catch(err) {
-    progWrap.style.display = 'none';
-    alert('Erro: ' + err.message);
-    zone.querySelector('.upload-zone-title').textContent = 'Clique ou arraste a imagem aqui';
-  }
-  addBtn.disabled = false;
+  });
+  renderQueue();
+  if (!isUploading) processQueue();
 }
 
-// ADD STAMP
-document.getElementById('addBtn').addEventListener('click',()=>{
-  const name=document.getElementById('addName').value.trim();
-  if(!pendingAddUrl){alert('Selecione e aguarde o upload da imagem.');return;}
-  if(!name){alert('Dê um nome à estampa.');return;}
-  const tags=getChecked('addTagsWrap');
-  // Shift all existing stamps by 1 so new stamp appears at top
-  stamps.forEach(s => { s.order = (s.order === undefined ? 1 : s.order) + 1; });
-  const stamp={id:Date.now(),name,subtitle:document.getElementById('addSubtitle').value.trim(),tags,img:pendingAddUrl,order:0};
-  if(tags.includes('colecao')){
-    stamp.colName=document.getElementById('addColName').value.trim()||'Sem nome';
-    stamp.colCover=document.getElementById('addColCover').value;
+function renderQueue() {
+  const wrap = document.getElementById('uploadQueue');
+  if (!uploadQueue.length) { wrap.style.display='none'; return; }
+  wrap.style.display = 'flex';
+
+  const doneCount    = uploadQueue.filter(i=>i.status==='done').length;
+  const savedCount   = uploadQueue.filter(i=>i.saved).length;
+  const allDone      = doneCount === uploadQueue.length;
+  const allSaved     = savedCount === uploadQueue.length;
+
+  // Build header
+  let header = wrap.querySelector('.queue-header');
+  if (!header) {
+    header = document.createElement('div');
+    header.className = 'queue-header';
+    wrap.prepend(header);
   }
-  stamps.push(stamp);
-  saveStamps();renderGrid();renderAdmCards();
-  pendingAddUrl=null;
-  document.getElementById('addPreviewWrap').style.display='none';
-  document.getElementById('addName').value='';
-  document.getElementById('addSubtitle').value='';
-  document.getElementById('addColName').value='';
-  document.getElementById('addColCover').value='no';
+  header.innerHTML = allDone
+    ? `<span style="color:var(--terra);font-size:.82rem;">✦ ${doneCount} imagem${doneCount>1?'s':''} carregada${doneCount>1?'s':''}. Edite os detalhes abaixo e clique em <strong style="color:var(--rust);">Salvar todas</strong>.</span>
+       <button class="order-apply-btn" id="saveAllBtn" style="margin-left:auto;">✦ Salvar todas (${doneCount - savedCount} pendentes)</button>`
+    : `<span style="color:var(--terra);font-size:.82rem;">Enviando ${doneCount} de ${uploadQueue.length}...</span>`;
+
+  if (allDone) {
+    const saveAllBtn = document.getElementById('saveAllBtn');
+    if (saveAllBtn) saveAllBtn.addEventListener('click', saveAllStamps);
+  }
+
+  // Build or update each item
+  uploadQueue.forEach((item, i) => {
+    let row = document.getElementById('qi-'+i);
+    if (!row) {
+      row = document.createElement('div');
+      row.className = 'queue-item queue-item-full';
+      row.id = 'qi-'+i;
+      wrap.appendChild(row);
+    }
+
+    const tagCheckboxes = CATS.map(c =>
+      `<label style="display:inline-flex;align-items:center;gap:.3rem;font-size:.72rem;cursor:pointer;white-space:nowrap;">
+        <input type="checkbox" value="${c.id}" ${(item.tags||[]).includes(c.id)?'checked':''} style="accent-color:var(--rust);width:12px;height:12px;" onchange="updateQueueItem(${i},'tag',this)">
+        ${c.label}
+      </label>`
+    ).join('');
+
+    const colSection = (item.tags||[]).includes('colecao') ? `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.5rem;">
+        <div>
+          <div style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--terra);margin-bottom:.25rem;">Nome da Coleção</div>
+          <input type="text" value="${item.colName||''}" style="width:100%;padding:.35rem .6rem;border:1px solid var(--border-accent);border-radius:4px;background:var(--input-bg);color:var(--text);font-size:.8rem;outline:none;" onchange="updateQueueItem(${i},'colName',this)" oninput="updateQueueItem(${i},'colName',this)">
+        </div>
+        <div>
+          <div style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--terra);margin-bottom:.25rem;">É capa?</div>
+          <select style="width:100%;padding:.35rem .6rem;border:1px solid var(--border-accent);border-radius:4px;background:var(--input-bg);color:var(--text);font-size:.8rem;outline:none;" onchange="updateQueueItem(${i},'colCover',this)">
+            <option value="no" ${item.colCover!=='yes'?'selected':''}>Não</option>
+            <option value="yes" ${item.colCover==='yes'?'selected':''}>Sim — capa</option>
+          </select>
+        </div>
+      </div>` : '';
+
+    const statusColor = {waiting:'var(--text-muted)',sending:'var(--rust)',done:'#4caf50',error:'#e05050'}[item.status];
+    const statusText  = {waiting:'Na fila...',sending:'Enviando...',done:item.saved?'✦ Salva!':'✦ Pronta para salvar',error:'Erro — tente de novo'}[item.status];
+
+    row.innerHTML = `
+      <div style="display:flex;gap:.8rem;align-items:flex-start;">
+        <div style="width:70px;height:70px;border-radius:4px;background:var(--border);flex-shrink:0;overflow:hidden;position:relative;">
+          ${item.url ? `<img src="${wmUrl(item.url)}" style="width:100%;height:100%;object-fit:cover;">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--peach);font-size:1.4rem;">✦</div>`}
+          ${item.saved ? `<div style="position:absolute;inset:0;background:rgba(76,175,80,.3);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">✓</div>` : ''}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem;">
+            <div style="font-size:.65rem;color:${statusColor};letter-spacing:.08em;text-transform:uppercase;">${statusText}</div>
+            <div class="queue-bar" style="flex:1;"><div class="queue-bar-fill" id="qbar-${i}" style="width:${item.status==='done'||item.status==='error'?'100':item.status==='sending'?'60':'0'}%;background:${item.status==='error'?'#e05050':'var(--rust)'};"></div></div>
+          </div>
+          <input type="text" value="${item.name}" placeholder="Nome da estampa"
+            style="width:100%;padding:.4rem .7rem;border:1px solid var(--border-accent);border-radius:4px;background:var(--input-bg);color:var(--text);font-size:.82rem;outline:none;margin-bottom:.5rem;font-family:'DM Sans',sans-serif;"
+            onchange="updateQueueItem(${i},'name',this)" oninput="updateQueueItem(${i},'name',this)">
+          <div style="display:flex;flex-wrap:wrap;gap:.4rem;">${tagCheckboxes}</div>
+          ${colSection}
+        </div>
+      </div>`;
+  });
+
+  // Update zone title
+  const zone = document.getElementById('addUploadZone');
+  if (allDone) zone.querySelector('.upload-zone-title').textContent = 'Clique para adicionar mais imagens';
+  else zone.querySelector('.upload-zone-title').textContent = `Enviando ${doneCount} de ${uploadQueue.length}...`;
+}
+
+function updateQueueItem(i, field, el) {
+  if (field === 'tag') {
+    if (el.checked) { if (!uploadQueue[i].tags.includes(el.value)) uploadQueue[i].tags.push(el.value); }
+    else { uploadQueue[i].tags = uploadQueue[i].tags.filter(t=>t!==el.value); }
+    // Re-render only this item to show/hide collection section
+    const wrap = document.getElementById('uploadQueue');
+    const row = document.getElementById('qi-'+i);
+    if (row) row.remove();
+    renderQueue();
+  } else if (field === 'name') {
+    uploadQueue[i].name = el.value;
+  } else if (field === 'colName') {
+    uploadQueue[i].colName = el.value;
+  } else if (field === 'colCover') {
+    uploadQueue[i].colCover = el.value;
+  }
+}
+
+async function processQueue() {
+  isUploading = true;
+  for (let i = 0; i < uploadQueue.length; i++) {
+    const item = uploadQueue[i];
+    if (item.status !== 'waiting') continue;
+    item.status = 'sending';
+    renderQueue();
+    try {
+      const url = await uploadToCloudinary(item.file, (pct) => {
+        const bar = document.getElementById('qbar-'+i);
+        if (bar) bar.style.width = pct + '%';
+      });
+      item.url = url;
+      item.status = 'done';
+    } catch(err) {
+      item.status = 'error';
+    }
+    renderQueue();
+  }
+  isUploading = false;
+  renderQueue();
+}
+
+function saveAllStamps() {
+  const toSave = uploadQueue.filter(i => i.status==='done' && !i.saved);
+  if (!toSave.length) { alert('Nada novo para salvar.'); return; }
+  toSave.forEach((item, idx) => {
+    if (!item.name.trim()) { alert(`Dê um nome para a imagem ${idx+1}.`); return; }
+    stamps.forEach(s => { s.order = (s.order===undefined?1:s.order)+1; });
+    const stamp = { id: Date.now()+Math.random(), name: item.name.trim(), subtitle: item.subtitle||'', tags: item.tags||[], img: item.url, order: 0 };
+    if ((item.tags||[]).includes('colecao')) { stamp.colName=item.colName||'Sem nome'; stamp.colCover=item.colCover||'no'; }
+    stamps.push(stamp);
+    item.saved = true;
+  });
+  saveStamps(); renderGrid(); renderAdmCards(); renderQueue();
+  alert(`✦ ${toSave.length} estampa${toSave.length>1?'s':''} salva${toSave.length>1?'s':''}!`);
+}
+
+// Clear/reset button
+document.getElementById('addBtn').addEventListener('click', () => {
+  if (isUploading) { alert('Aguarde o envio terminar.'); return; }
+  uploadQueue = [];
+  document.getElementById('uploadQueue').style.display = 'none';
+  document.getElementById('addSubtitle').value = '';
+  document.getElementById('addColName').value = '';
+  document.getElementById('addColCover').value = 'no';
   document.getElementById('addCollectionFields').classList.remove('visible');
-  document.getElementById('addUploadZone').querySelector('.upload-zone-title').textContent='Clique ou arraste a imagem aqui';
-  setChecked('addTagsWrap',[]);
-  alert('✦ Estampa adicionada com sucesso!');
+  document.getElementById('addUploadZone').querySelector('.upload-zone-title').textContent = 'Clique ou arraste as imagens aqui';
+  setChecked('addTagsWrap', []);
 });
 
 // ADM CARDS
