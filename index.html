@@ -71,7 +71,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 .about-text p{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:300;line-height:1.9;color:var(--text);opacity:.7;margin-bottom:1.2rem}
 
 /* PORTFOLIO */
-.portfolio{padding:5rem 3rem;background:var(--surface);transition:background .35s}
+.portfolio{padding:5rem 2rem;background:var(--surface);transition:background .35s}
 .portfolio-header{text-align:center;margin-bottom:2rem}
 .section-label{font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--rust);margin-bottom:1rem;display:block}
 .portfolio-header h2{font-family:'Playfair Display',serif;font-size:2.5rem;color:var(--text)}
@@ -79,8 +79,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 .cat-tab{font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;padding:.5rem 1.2rem;border:1px solid var(--border-accent);color:var(--rust);background:transparent;cursor:pointer;border-radius:2rem;transition:all .2s;white-space:nowrap;font-family:'DM Sans',sans-serif}
 .cat-tab:hover{background:rgba(196,86,42,.1)}
 .cat-tab.active{background:var(--rust);color:#FFFDF9;border-color:var(--rust)}
-.portfolio-grid{columns:3;column-gap:1.2rem;max-width:1100px;margin:0 auto}
-.portfolio-card{position:relative;border-radius:4px;overflow:hidden;cursor:pointer;background:var(--card-bg);transition:transform .3s,background .35s;break-inside:avoid;margin-bottom:1.2rem;display:inline-block;width:100%}
+.portfolio-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.2rem;max-width:1400px;margin:0 auto;align-items:start}
+.portfolio-card{position:relative;border-radius:4px;overflow:hidden;cursor:pointer;background:var(--card-bg);transition:transform .3s,background .35s}
 .portfolio-card:hover{transform:translateY(-6px)}
 .portfolio-card:hover .card-overlay{opacity:1}
 .card-pattern{width:100%;position:relative;overflow:hidden}
@@ -110,8 +110,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 .lightbox-close{background:none;border:1px solid rgba(232,168,124,.3);color:var(--peach);padding:.5rem 1.2rem;border-radius:4px;cursor:pointer;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;transition:all .2s;font-family:'DM Sans',sans-serif}
 .lightbox-close:hover{background:var(--rust);color:#FFFDF9;border-color:var(--rust)}
 .lightbox-body{flex:1;overflow-y:auto;padding:2rem}
-.lightbox-grid{columns:3;column-gap:1.2rem;max-width:1100px;margin:0 auto}
-.lightbox-card{border-radius:4px;overflow:hidden;background:var(--card-bg);transition:transform .25s;cursor:zoom-in;break-inside:avoid;margin-bottom:1.2rem;display:inline-block;width:100%}
+.lightbox-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.2rem;max-width:1400px;margin:0 auto;align-items:start}
+.lightbox-card{border-radius:4px;overflow:hidden;background:var(--card-bg);transition:transform .25s;cursor:zoom-in}
 .lightbox-card:hover{transform:translateY(-4px)}
 .lightbox-card img{width:100%;height:auto;display:block;cursor:zoom-in}
 .lightbox-card-info{padding:.7rem .9rem}
@@ -224,8 +224,8 @@ footer p{font-size:.75rem;color:rgba(232,216,192,.35);letter-spacing:.06em}
 .img-viewer-info{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);text-align:center;color:rgba(242,232,220,.7);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;pointer-events:none}
 .img-viewer-hint{font-size:.7rem;color:rgba(232,168,124,.5);margin-top:.3rem}
 /* Masonry responsive */
-@media(max-width:900px){.portfolio-grid{columns:2}.lightbox-grid{columns:2}}
-@media(max-width:500px){.portfolio-grid{columns:1}.lightbox-grid{columns:1}}
+@media(max-width:768px){.portfolio-grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}.lightbox-grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}}
+@media(max-width:480px){.portfolio-grid{grid-template-columns:repeat(2,1fr)}.lightbox-grid{grid-template-columns:repeat(2,1fr)}}
 
 /* ADM TABS */
 .adm-tabs{display:flex;gap:.5rem;margin-bottom:2rem;border-bottom:1px solid var(--border-accent);padding-bottom:0}
