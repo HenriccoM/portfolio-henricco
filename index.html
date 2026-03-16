@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Henricco Moretti — Designer de Estampas</title>
-<script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -365,6 +364,10 @@ footer p{font-size:.75rem;color:rgba(232,216,192,.35);letter-spacing:.06em}
         <p class="upload-zone-title">Clique ou arraste a imagem aqui</p>
         <p class="upload-zone-sub">PNG, JPG, WEBP — enviada para o Cloudinary</p>
       </div>
+      <div id="addProgWrap" style="display:none;margin-bottom:1rem;">
+        <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:.4rem;"><div id="addProgFill" style="height:100%;background:var(--rust);width:0%;transition:width .3s;border-radius:3px;"></div></div>
+        <p id="addProgLabel" style="font-size:.75rem;color:var(--terra);text-align:center;">Enviando...</p>
+      </div>
       <div class="img-preview-wrap" id="addPreviewWrap">
         <img id="addPreviewImg" alt="Preview">
         <p class="upload-zone-info" id="addSizeInfo"></p>
@@ -488,43 +491,71 @@ let pendingEditUrl = null;
 function loadStamps() { try { stamps = JSON.parse(localStorage.getItem('hm_stamps_cloud')||'[]'); } catch(e) { stamps=[]; } }
 function saveStamps() { localStorage.setItem('hm_stamps_cloud', JSON.stringify(stamps)); }
 
-// CLOUDINARY UPLOAD WIDGET
-function openCloudinaryWidget(onSuccess) {
-  const widget = cloudinary.createUploadWidget({
-    cloudName: CLOUD_NAME,
-    uploadPreset: UPLOAD_PRESET,
-    folder: 'ricco-portfolio',
-    sources: ['local','url','camera'],
-    multiple: false,
-    maxFileSize: 15000000,
-    clientAllowedFormats: ['jpg','jpeg','png','webp'],
-    theme: 'minimal',
-    language: 'pt',
-    text: {
-      'pt': {
-        'or': 'ou',
-        'back': 'Voltar',
-        'advanced': 'Avançado',
-        'close': 'Fechar',
-        'no_results': 'Sem resultados',
-        'search_placeholder': 'Pesquisar arquivos',
-        'about_uw': 'Sobre o Widget',
-        'menu': { 'files': 'Meus arquivos', 'web': 'Endereço web', 'camera': 'Câmera' },
-        'local': { 'browse': 'Escolher arquivo', 'dd_title_single': 'Arraste sua imagem aqui', 'drop_title_single': 'Solte para fazer upload' },
-        'crop': { 'title': 'Recortar', 'crop_btn': 'Confirmar', 'skip_btn': 'Usar original', 'reset_btn': 'Resetar', 'close_prompt': 'Fechar cancelará o upload. Tem certeza?', 'image_fallback': 'Esta imagem não pode ser recortada' },
-        'upload_progress': { 'uploading': 'Enviando...', 'processing': 'Processando...', 'complete': 'Concluído!', 'failed': 'Falhou', 'quota_exceeded': 'Cota excedida' }
-      }
-    }
-  }, (error, result) => {
-    if (!error && result && result.event === 'success') {
-      onSuccess(result.info.secure_url);
-      widget.close();
-    }
-    if (error) {
-      alert('Erro no upload: ' + (error.message || error));
-    }
+// CLOUDINARY UPLOAD — multi-pass compression to stay under 8MB
+async function uploadToCloudinary(file, onProgress) {
+  onProgress(10, 'Comprimindo imagem...');
+
+  // Progressively compress until under 8MB
+  const MAX_BYTES = 8 * 1024 * 1024;
+  const MAX_DIM   = 2400;
+
+  const blob = await new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        // Scale down large dimensions
+        if (w > MAX_DIM || h > MAX_DIM) {
+          const r = Math.min(MAX_DIM/w, MAX_DIM/h);
+          w = Math.round(w*r); h = Math.round(h*r);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+
+        // Try qualities from 0.88 down until under 8MB
+        const tryQuality = (q) => {
+          canvas.toBlob(b => {
+            if (!b) { rej(new Error('Falha na compressão')); return; }
+            if (b.size <= MAX_BYTES || q <= 0.25) {
+              res(b);
+            } else {
+              tryQuality(Math.round((q - 0.08) * 100) / 100);
+            }
+          }, 'image/jpeg', q);
+        };
+        tryQuality(0.88);
+      };
+      img.onerror = rej;
+      img.src = e.target.result;
+    };
+    reader.onerror = rej;
+    reader.readAsDataURL(file);
   });
-  widget.open();
+
+  const sizeMB = (blob.size / (1024*1024)).toFixed(1);
+  onProgress(40, `Enviando (${sizeMB}MB)...`);
+
+  const fd = new FormData();
+  fd.append('file', blob, 'stamp.jpg');
+  fd.append('upload_preset', UPLOAD_PRESET);
+  fd.append('folder', 'ricco-portfolio');
+
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+    method: 'POST',
+    body: fd
+  });
+
+  onProgress(90, 'Finalizando...');
+  if (!res.ok) {
+    let msg = 'Erro ' + res.status;
+    try { const e = await res.json(); msg = e.error?.message || msg; } catch(_){}
+    throw new Error(msg);
+  }
+  const data = await res.json();
+  onProgress(100, '✦ Concluído!');
+  return data.secure_url;
 }
 
 // RENDER GRID
@@ -679,16 +710,47 @@ function openAdm() {
 }
 document.getElementById('admCloseBtn').addEventListener('click',()=>document.getElementById('admPanel').classList.remove('open'));
 
-// ADD — open Cloudinary widget on zone click
-document.getElementById('addUploadZone').addEventListener('click', ()=>{
-  openCloudinaryWidget(url => {
-    pendingAddUrl = url;
-    document.getElementById('addPreviewWrap').style.display='block';
-    document.getElementById('addPreviewImg').src=url;
-    document.getElementById('addSizeInfo').textContent='✦ Imagem enviada com sucesso!';
-    document.getElementById('addUploadZone').querySelector('.upload-zone-title').textContent='Imagem enviada! Clique para trocar.';
-  });
+// ADD FILE — trigger hidden input on zone click
+const addFileInput = document.createElement('input');
+addFileInput.type = 'file'; addFileInput.accept = 'image/*'; addFileInput.style.display = 'none';
+document.body.appendChild(addFileInput);
+document.getElementById('addUploadZone').addEventListener('click', () => addFileInput.click());
+document.getElementById('addUploadZone').addEventListener('dragover', e => { e.preventDefault(); document.getElementById('addUploadZone').classList.add('dragover'); });
+document.getElementById('addUploadZone').addEventListener('dragleave', () => document.getElementById('addUploadZone').classList.remove('dragover'));
+document.getElementById('addUploadZone').addEventListener('drop', e => {
+  e.preventDefault(); document.getElementById('addUploadZone').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) handleAddFile(file);
 });
+addFileInput.addEventListener('change', e => { if (e.target.files[0]) handleAddFile(e.target.files[0]); });
+
+async function handleAddFile(file) {
+  const zone = document.getElementById('addUploadZone');
+  const addBtn = document.getElementById('addBtn');
+  const progWrap = document.getElementById('addProgWrap');
+  const progFill = document.getElementById('addProgFill');
+  const progLabel = document.getElementById('addProgLabel');
+  addBtn.disabled = true;
+  progWrap.style.display = 'block';
+  zone.querySelector('.upload-zone-title').textContent = 'Enviando...';
+  try {
+    const url = await uploadToCloudinary(file, (pct, msg) => {
+      progFill.style.width = pct + '%';
+      progLabel.textContent = msg;
+    });
+    pendingAddUrl = url;
+    document.getElementById('addPreviewWrap').style.display = 'block';
+    document.getElementById('addPreviewImg').src = url;
+    document.getElementById('addSizeInfo').textContent = '✦ Imagem enviada!';
+    zone.querySelector('.upload-zone-title').textContent = 'Imagem enviada! Clique para trocar.';
+    setTimeout(() => { progWrap.style.display = 'none'; }, 1500);
+  } catch(err) {
+    progWrap.style.display = 'none';
+    alert('Erro: ' + err.message);
+    zone.querySelector('.upload-zone-title').textContent = 'Clique ou arraste a imagem aqui';
+  }
+  addBtn.disabled = false;
+}
 
 // ADD STAMP
 document.getElementById('addBtn').addEventListener('click',()=>{
@@ -769,12 +831,21 @@ function openEdit(i){
 }
 document.getElementById('editClose').addEventListener('click',()=>document.getElementById('editModal').classList.remove('open'));
 document.getElementById('editModal').addEventListener('click',e=>{if(e.target===document.getElementById('editModal'))document.getElementById('editModal').classList.remove('open');});
-document.getElementById('editUploadZone').addEventListener('click', ()=>{
-  openCloudinaryWidget(url => {
+const editFileInput = document.createElement('input');
+editFileInput.type = 'file'; editFileInput.accept = 'image/*'; editFileInput.style.display = 'none';
+document.body.appendChild(editFileInput);
+document.getElementById('editUploadZone').addEventListener('click', () => editFileInput.click());
+editFileInput.addEventListener('change', async e => {
+  const file = e.target.files[0]; if (!file) return;
+  const saveBtn = document.getElementById('saveEditBtn');
+  saveBtn.disabled = true;
+  try {
+    const url = await uploadToCloudinary(file, ()=>{});
     pendingEditUrl = url;
-    document.getElementById('editPreviewWrap').style.display='block';
-    document.getElementById('editPreviewImg').src=url;
-  });
+    document.getElementById('editPreviewWrap').style.display = 'block';
+    document.getElementById('editPreviewImg').src = url;
+  } catch(err) { alert('Erro: ' + err.message); }
+  saveBtn.disabled = false;
 });
 document.getElementById('saveEditBtn').addEventListener('click',()=>{
   const i=+document.getElementById('editIdx').value;
