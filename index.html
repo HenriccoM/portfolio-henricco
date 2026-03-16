@@ -667,12 +667,10 @@ async function doLogin() {
 function openAdm() {
   pendingAddUrl=null;
   document.getElementById('addPreviewWrap').style.display='none';
-  document.getElementById('addProgress').style.display='none';
   document.getElementById('addName').value='';
   document.getElementById('addSubtitle').value='';
   document.getElementById('addColName').value='';
   document.getElementById('addColCover').value='no';
-  document.getElementById('addFileInput').value='';
   document.getElementById('addCollectionFields').classList.remove('visible');
   document.getElementById('addUploadZone').querySelector('.upload-zone-title').textContent='Clique ou arraste a imagem aqui';
   setChecked('addTagsWrap',[]);
@@ -711,7 +709,6 @@ document.getElementById('addBtn').addEventListener('click',()=>{
   document.getElementById('addSubtitle').value='';
   document.getElementById('addColName').value='';
   document.getElementById('addColCover').value='no';
-  document.getElementById('addFileInput').value='';
   document.getElementById('addCollectionFields').classList.remove('visible');
   document.getElementById('addUploadZone').querySelector('.upload-zone-title').textContent='Clique ou arraste a imagem aqui';
   setChecked('addTagsWrap',[]);
@@ -757,8 +754,6 @@ function openEdit(i){
   document.getElementById('editIdx').value=i;
   document.getElementById('editName').value=s.name;
   document.getElementById('editSubtitle').value=s.subtitle||'';
-  document.getElementById('editFileInput').value='';
-  document.getElementById('editProgress').style.display='none';
   document.getElementById('editPreviewWrap').style.display='block';
   document.getElementById('editPreviewImg').src=s.img;
   setChecked('editTagsWrap',s.tags||[]);
