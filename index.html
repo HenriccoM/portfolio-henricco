@@ -217,7 +217,7 @@ footer p{font-size:.75rem;color:rgba(232,216,192,.35);letter-spacing:.06em}
 .img-viewer.open{display:flex}
 .img-viewer.zoomed{cursor:zoom-out}
 .img-viewer-inner{position:relative;max-width:95vw;max-height:90vh;overflow:hidden;border-radius:4px}
-.img-viewer-inner img{display:block;max-width:95vw;max-height:90vh;width:auto;height:auto;transform-origin:center center;transition:transform .2s;user-select:none;border-radius:4px}
+.img-viewer-inner img{display:block;max-width:95vw;max-height:90vh;width:auto;height:auto;transform-origin:center center;transition:transform .25s cubic-bezier(.25,.46,.45,.94);user-select:none;border-radius:4px;-webkit-user-drag:none}
 .img-viewer.zoomed .img-viewer-inner img{max-width:none;max-height:none;cursor:zoom-out}
 .img-viewer-close{position:fixed;top:1.2rem;right:1.5rem;background:rgba(232,168,124,.15);border:1px solid rgba(232,168,124,.3);color:var(--peach);width:40px;height:40px;border-radius:50%;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:all .2s;z-index:10}
 .img-viewer-close:hover{background:var(--rust);border-color:var(--rust);color:#fff}
@@ -527,7 +527,7 @@ footer p{font-size:.75rem;color:rgba(232,216,192,.35);letter-spacing:.06em}
 <div class="img-viewer" id="imgViewer">
   <button class="img-viewer-close" id="imgViewerClose">✕</button>
   <div class="img-viewer-inner" id="imgViewerInner">
-    <img id="imgViewerImg" alt="" draggable="false">
+    <img id="imgViewerImg" alt="" draggable="false" oncontextmenu="return false;" style="-webkit-user-drag:none;">
   </div>
   <div class="img-viewer-info">
     <div id="imgViewerName"></div>
@@ -638,7 +638,36 @@ async function uploadToCloudinary(file, onProgress) {
   }
   const data = await res.json();
   onProgress(100, '✦ Concluído!');
-  return data.secure_url;
+  // Apply Cloudinary native watermark to the URL
+  return applyCloudinaryWatermark(data.secure_url);
+}
+
+// CLOUDINARY NATIVE WATERMARK
+// Transforms URL to include tiled text watermark rendered by Cloudinary
+// Example: .../upload/v123/img.jpg → .../upload/<wm_params>/v123/img.jpg
+function applyCloudinaryWatermark(url) {
+  // Watermark params: tiled text, 30% opacity, diagonal, medium size
+  const wm = [
+    'l_text:Arial_28_bold:Henricco%20Moretti',  // text + font + size
+    'co_white',            // color white
+    'o_25',               // 25% opacity
+    'a_-30',              // -30 degree rotation
+    'fl_tiled',           // tile across whole image
+    'fl_layer_apply'      // apply the layer
+  ].join(',');
+
+  // Insert watermark params after /upload/
+  return url.replace('/upload/', '/upload/' + wm + '/');
+}
+
+// Also transform existing stored URLs when rendering
+function wmUrl(url) {
+  if (!url) return url;
+  // Already has watermark
+  if (url.includes('fl_tiled')) return url;
+  // Only transform Cloudinary URLs
+  if (!url.includes('res.cloudinary.com')) return url;
+  return applyCloudinaryWatermark(url);
 }
 
 // RENDER GRID
@@ -665,7 +694,7 @@ function renderGrid() {
       div.className = 'collection-cover';
       div.innerHTML = `
         <span class="cov-count">${items.length} estampa${items.length>1?'s':''}</span>
-        <img class="cov-img" src="${cover.img}" alt="${name}" loading="lazy">
+        <img class="cov-img" src="${wmUrl(cover.img)}" alt="${name}" loading="lazy">
         <div class="cov-overlay">
           <h3>${name}</h3>
           <p>Ver coleção →</p>
@@ -683,9 +712,10 @@ function renderGrid() {
     const tagHtml = (s.tags||[]).map(t=>`<span class="card-tag">#${catLabel(t)}</span>`).join('');
     const div = document.createElement('div');
     div.className = 'portfolio-card';
-    div.innerHTML = `<div class="card-pattern"><img src="${s.img}" alt="${s.name}" loading="lazy"></div>
+    div.innerHTML = `<div class="card-pattern"><img src="${wmUrl(s.img)}" alt="${s.name}" loading="lazy"></div>
       <div class="card-overlay"><h3>${s.name}</h3><p>${s.subtitle||''}</p><div class="card-tags">${tagHtml}</div></div>`;
-    div.addEventListener('click', () => openViewer(s.img, s.name));
+    div.querySelector('img').setAttribute('oncontextmenu', 'return false');
+    div.addEventListener('click', () => openViewer(wmUrl(s.img), s.name));
     grid.appendChild(div);
   });
 }
@@ -698,12 +728,12 @@ function openLightbox(name, items) {
   items.forEach(s => {
     const div = document.createElement('div');
     div.className = 'lightbox-card';
-    div.innerHTML = `<img src="${s.img}" alt="${s.name}" loading="lazy">
+    div.innerHTML = `<img src="${wmUrl(s.img)}" alt="${s.name}" loading="lazy">
       <div class="lightbox-card-info">
         <div class="lightbox-card-name">${s.name}</div>
         <div class="lightbox-card-sub">${s.subtitle||''}</div>
       </div>`;
-    div.addEventListener('click', () => openViewer(s.img, s.name));
+    div.addEventListener('click', () => openViewer(wmUrl(s.img), s.name));
     grid.appendChild(div);
   });
   document.getElementById('collectionLightbox').classList.add('open');
@@ -970,12 +1000,48 @@ document.getElementById('saveEditBtn').addEventListener('click',()=>{
 
 // FULLSCREEN IMAGE VIEWER
 let viewerScale = 1;
-let viewerOrigin = {x:'50%', y:'50%'};
+const ZOOM_STEP = 0.5;
+const ZOOM_MIN  = 1;
+const ZOOM_MAX  = 5;
+
+// Watermark generator — tiled "Henricco Moretti" on canvas
+function makeWatermark(imgEl) {
+  const canvas = document.createElement('canvas');
+  canvas.width  = imgEl.naturalWidth  || imgEl.width  || 800;
+  canvas.height = imgEl.naturalHeight || imgEl.height || 600;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(imgEl, 0, 0, canvas.width, canvas.height);
+
+  const text = 'Henricco Moretti';
+  const fontSize = Math.max(18, Math.round(canvas.width / 22));
+  ctx.font = `${fontSize}px 'Playfair Display', serif`;
+  ctx.fillStyle = 'rgba(255,255,255,0.28)';
+  ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+  ctx.lineWidth = 1;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Tile diagonally across whole image
+  const spacing = fontSize * 5;
+  ctx.save();
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.rotate(-30 * Math.PI / 180);
+  for (let y = -canvas.height * 1.5; y < canvas.height * 1.5; y += spacing) {
+    for (let x = -canvas.width * 1.5; x < canvas.width * 1.5; x += spacing * 1.6) {
+      ctx.strokeText(text, x, y);
+      ctx.fillText(text, x, y);
+    }
+  }
+  ctx.restore();
+  return canvas.toDataURL('image/jpeg', 0.92);
+}
 
 function openViewer(src, name) {
-  const viewer = document.getElementById('imgViewer');
-  const img = document.getElementById('imgViewerImg');
-  const nameEl = document.getElementById('imgViewerName');
+  const viewer  = document.getElementById('imgViewer');
+  const img     = document.getElementById('imgViewerImg');
+  const nameEl  = document.getElementById('imgViewerName');
+  const hint    = document.querySelector('.img-viewer-hint');
+
   img.src = src;
   nameEl.textContent = name || '';
   viewerScale = 1;
@@ -984,46 +1050,77 @@ function openViewer(src, name) {
   viewer.classList.remove('zoomed');
   viewer.classList.add('open');
   document.body.style.overflow = 'hidden';
+  updateZoomHint();
+
+  // Apply watermark once image loads
+  img.onload = () => {
+    try { img.src = makeWatermark(img); } catch(e) {}
+  };
+  if (img.complete && img.naturalWidth) {
+    try { img.src = makeWatermark(img); } catch(e) {}
+  }
 }
+
+function updateZoomHint() {
+  const hint = document.querySelector('.img-viewer-hint');
+  if (!hint) return;
+  if (viewerScale >= ZOOM_MAX) hint.textContent = 'Zoom máximo · Scroll para reduzir · ESC para fechar';
+  else if (viewerScale <= ZOOM_MIN) hint.textContent = 'Clique ou scroll para dar zoom · ESC para fechar';
+  else hint.textContent = `Zoom ${viewerScale.toFixed(1)}x · Scroll para ajustar · ESC para fechar`;
+}
+
+function applyZoom(newScale, originX, originY) {
+  const img    = document.getElementById('imgViewerImg');
+  const viewer = document.getElementById('imgViewer');
+  viewerScale = Math.round(Math.min(Math.max(newScale, ZOOM_MIN), ZOOM_MAX) * 10) / 10;
+  if (originX !== undefined) {
+    img.style.transformOrigin = originX + '% ' + originY + '%';
+  }
+  img.style.transform = 'scale(' + viewerScale + ')';
+  if (viewerScale > 1) viewer.classList.add('zoomed');
+  else { viewer.classList.remove('zoomed'); img.style.transformOrigin = 'center center'; }
+  updateZoomHint();
+}
+
 function closeViewer() {
   document.getElementById('imgViewer').classList.remove('open');
   document.body.style.overflow = '';
+  viewerScale = 1;
 }
+
 document.getElementById('imgViewerClose').addEventListener('click', closeViewer);
 document.getElementById('imgViewer').addEventListener('click', e => {
-  if (e.target === document.getElementById('imgViewer') || e.target === document.getElementById('imgViewerInner')) closeViewer();
+  if (e.target === document.getElementById('imgViewer') ||
+      e.target === document.getElementById('imgViewerInner')) closeViewer();
 });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeViewer(); });
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('imgViewer').classList.contains('open')) return;
+  if (e.key === 'Escape') closeViewer();
+  if (e.key === '+' || e.key === '=') applyZoom(viewerScale + ZOOM_STEP);
+  if (e.key === '-') applyZoom(viewerScale - ZOOM_STEP);
+});
 
-// Click to zoom / unzoom
+// Click to zoom in steps of 0.5x
 document.getElementById('imgViewerImg').addEventListener('click', function(e) {
   e.stopPropagation();
-  const viewer = document.getElementById('imgViewer');
-  if (viewerScale === 1) {
-    // Calculate zoom origin from click position
-    const rect = this.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width * 100).toFixed(1) + '%';
-    const y = ((e.clientY - rect.top) / rect.height * 100).toFixed(1) + '%';
-    this.style.transformOrigin = x + ' ' + y;
-    viewerScale = 2.8;
-    this.style.transform = 'scale(2.8)';
-    viewer.classList.add('zoomed');
+  const rect = this.getBoundingClientRect();
+  const ox = ((e.clientX - rect.left) / rect.width  * 100).toFixed(1);
+  const oy = ((e.clientY - rect.top)  / rect.height * 100).toFixed(1);
+  if (viewerScale >= ZOOM_MAX) {
+    applyZoom(ZOOM_MIN);
   } else {
-    viewerScale = 1;
-    this.style.transform = 'scale(1)';
-    this.style.transformOrigin = 'center center';
-    viewer.classList.remove('zoomed');
+    applyZoom(viewerScale + ZOOM_STEP, ox, oy);
   }
 });
 
-// Mouse wheel zoom
+// Scroll to zoom in steps of 0.5x
 document.getElementById('imgViewerImg').addEventListener('wheel', function(e) {
   e.preventDefault();
-  const viewer = document.getElementById('imgViewer');
-  viewerScale = Math.min(Math.max(viewerScale - e.deltaY * 0.003, 1), 5);
-  this.style.transform = 'scale(' + viewerScale + ')';
-  if (viewerScale > 1) viewer.classList.add('zoomed');
-  else { viewer.classList.remove('zoomed'); this.style.transformOrigin = 'center center'; }
+  const rect = this.getBoundingClientRect();
+  const ox = ((e.clientX - rect.left) / rect.width  * 100).toFixed(1);
+  const oy = ((e.clientY - rect.top)  / rect.height * 100).toFixed(1);
+  const direction = e.deltaY < 0 ? 1 : -1;
+  applyZoom(viewerScale + direction * ZOOM_STEP, ox, oy);
 }, {passive: false});
 
 
