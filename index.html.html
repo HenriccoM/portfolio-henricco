@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Henricco Moretti — Designer de Estampas</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --rust:#C4562A;--terra:#D97840;--peach:#E8A87C;
+  --bg:#FAF3EC;--surface:#FFFDF9;--text:#4A2E1A;--text-muted:rgba(74,46,26,0.6);
+  --border:rgba(74,46,26,0.1);--border-accent:rgba(196,86,42,0.25);
+  --nav-bg:rgba(250,243,236,0.95);--card-bg:#E8D5C0;
+  --modal-bg:#FFFDF9;--input-bg:#FAF3EC;
+  --adm-bg:#FAF3EC;--adm-form-bg:#FFFDF9;--adm-card-bg:#FFFDF9;
+  --grid-line:rgba(74,46,26,0.04);--shadow:rgba(74,46,26,0.25);--toggle-bg:rgba(196,86,42,0.12);
+}
+[data-theme="dark"]{
+  --rust:#D96B3A;--terra:#E08B4E;--peach:#E8A87C;
+  --bg:#1A0F08;--surface:#241509;--text:#F2E8DC;--text-muted:rgba(242,232,220,0.55);
+  --border:rgba(242,232,220,0.08);--border-accent:rgba(232,168,124,0.2);
+  --nav-bg:rgba(26,15,8,0.97);--card-bg:#2E1A0C;
+  --modal-bg:#241509;--input-bg:#1A0F08;
+  --adm-bg:#1A0F08;--adm-form-bg:#241509;--adm-card-bg:#241509;
+  --grid-line:rgba(242,232,220,0.03);--shadow:rgba(0,0,0,0.6);--toggle-bg:rgba(232,168,124,0.1);
+}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;transition:background .35s,color .35s}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:1.2rem 3rem;background:var(--nav-bg);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);transition:background .35s,border-color .35s}
+.nav-logo{font-family:'Playfair Display',serif;font-size:1.1rem;letter-spacing:.04em;color:var(--text)}
+.nav-links{display:flex;gap:1.8rem;align-items:center}
+.nav-links a{font-size:.82rem;letter-spacing:.12em;text-transform:uppercase;color:var(--rust);text-decoration:none;transition:color .2s}
+.nav-links a:hover{color:var(--text)}
+.adm-btn{font-size:.72rem!important;padding:.35rem 1rem!important;border:1px solid var(--border-accent);border-radius:2rem;color:var(--peach)!important;cursor:pointer;transition:all .2s;background:none}
+.adm-btn:hover{background:var(--rust)!important;color:#FFFDF9!important;border-color:var(--rust)!important}
+.theme-toggle{width:44px;height:24px;background:var(--toggle-bg);border:1px solid var(--border-accent);border-radius:12px;cursor:pointer;position:relative;transition:background .3s;flex-shrink:0}
+.theme-toggle::before{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:var(--rust);top:3px;left:3px;transition:transform .3s,background .3s}
+[data-theme="dark"] .theme-toggle::before{transform:translateX(20px);background:var(--peach)}
+.theme-toggle .icon-sun,.theme-toggle .icon-moon{position:absolute;top:50%;font-size:10px;line-height:1;transform:translateY(-50%);transition:opacity .2s;pointer-events:none}
+.theme-toggle .icon-sun{right:5px;opacity:1}
+.theme-toggle .icon-moon{left:5px;opacity:0}
+[data-theme="dark"] .theme-toggle .icon-sun{opacity:0}
+[data-theme="dark"] .theme-toggle .icon-moon{opacity:1}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:6rem 3rem 3rem;position:relative;overflow:hidden;background:var(--surface);transition:background .35s}
+.hero-bg{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 79px,var(--grid-line) 79px,var(--grid-line) 80px),repeating-linear-gradient(90deg,transparent,transparent 79px,var(--grid-line) 79px,var(--grid-line) 80px)}
+.stars-bg{position:absolute;inset:0;pointer-events:none}
+.hero-content{position:relative;z-index:2;text-align:center;max-width:800px;animation:fadeUp .9s ease both}
+.hero-badge{display:inline-block;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--rust);background:rgba(196,86,42,.1);padding:.4rem 1.2rem;border-radius:2rem;margin-bottom:2rem}
+.hero h1{font-family:'Playfair Display',serif;font-size:clamp(3.5rem,8vw,7rem);line-height:1;color:var(--text);margin-bottom:.5rem;transition:color .35s}
+.hero h1 em{font-style:italic;color:var(--rust)}
+.hero-subtitle{font-family:'Cormorant Garamond',serif;font-size:clamp(1.1rem,2.5vw,1.5rem);font-weight:300;color:var(--terra);margin-bottom:.8rem;letter-spacing:.08em}
+.hero-company{font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;color:var(--peach);margin-bottom:2.5rem}
+.hero-divider{width:60px;height:2px;background:var(--rust);margin:0 auto 2.5rem}
+.hero-desc{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:300;color:var(--text);opacity:.65;line-height:1.8;max-width:500px;margin:0 auto 3rem}
+.hero-cta{display:inline-flex;align-items:center;gap:.8rem;padding:.9rem 2.5rem;background:var(--rust);color:#FFFDF9;text-decoration:none;font-size:.82rem;letter-spacing:.15em;text-transform:uppercase;transition:background .2s,transform .2s}
+.hero-cta:hover{background:var(--text);transform:translateY(-2px)}
+.stripe-row{display:flex;height:6px;border-radius:3px;overflow:hidden;max-width:200px;margin:3.5rem auto 0}
+.stripe-row span{flex:1}
+
+/* ABOUT */
+.about{padding:6rem 3rem;max-width:1100px;margin:0 auto}
+.about-text h2{font-family:'Playfair Display',serif;font-size:2.8rem;line-height:1.1;margin-bottom:1.5rem;color:var(--text)}
+.about-text h2 em{font-style:italic;color:var(--rust)}
+.about-text p{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:300;line-height:1.9;color:var(--text);opacity:.7;margin-bottom:1.2rem}
+
+/* PORTFOLIO */
+.portfolio{padding:5rem 3rem;background:var(--surface);transition:background .35s}
+.portfolio-header{text-align:center;margin-bottom:2rem}
+.section-label{font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--rust);margin-bottom:1rem;display:block}
+.portfolio-header h2{font-family:'Playfair Display',serif;font-size:2.5rem;color:var(--text)}
+.cat-tabs{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-bottom:3rem;padding:0 1rem}
+.cat-tab{font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;padding:.5rem 1.2rem;border:1px solid var(--border-accent);color:var(--rust);background:transparent;cursor:pointer;border-radius:2rem;transition:all .2s;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.cat-tab:hover{background:rgba(196,86,42,.1)}
+.cat-tab.active{background:var(--rust);color:#FFFDF9;border-color:var(--rust)}
+.portfolio-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;max-width:1100px;margin:0 auto}
+.portfolio-card{position:relative;border-radius:4px;overflow:hidden;cursor:pointer;background:var(--card-bg);transition:transform .3s,background .35s}
+.portfolio-card:hover{transform:translateY(-6px)}
+.portfolio-card:hover .card-overlay{opacity:1}
+.card-pattern{width:100%;aspect-ratio:3/4;position:relative;overflow:hidden}
+.card-pattern img{width:100%;height:100%;object-fit:cover;display:block}
+.card-overlay{position:absolute;inset:0;background:rgba(26,8,2,.82);opacity:0;transition:opacity .3s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;padding:1rem;text-align:center}
+.card-overlay h3{font-family:'Playfair Display',serif;font-size:1.2rem;color:#F2E8DC}
+.card-overlay p{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--peach)}
+.card-tags{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:6px}
+.card-tag{font-size:.65rem;padding:2px 8px;background:rgba(232,168,124,.2);color:var(--peach);border-radius:2rem}
+.no-results{text-align:center;padding:4rem;color:var(--peach);font-family:'Cormorant Garamond',serif;font-size:1.2rem;grid-column:1/-1}
+
+/* COLLECTION COVERS */
+.collection-cover{position:relative;border-radius:4px;overflow:hidden;cursor:pointer;background:var(--card-bg);transition:transform .3s}
+.collection-cover:hover{transform:translateY(-6px)}
+.collection-cover:hover .cov-overlay{opacity:1}
+.cov-img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block}
+.cov-overlay{position:absolute;inset:0;background:rgba(26,8,2,.78);opacity:0;transition:opacity .3s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;padding:1.5rem;text-align:center}
+.cov-overlay h3{font-family:'Playfair Display',serif;font-size:1.3rem;color:#F2E8DC}
+.cov-overlay p{font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:var(--peach)}
+.cov-count{position:absolute;top:.8rem;right:.8rem;background:var(--rust);color:#FFFDF9;font-size:.65rem;letter-spacing:.08em;padding:.25rem .6rem;border-radius:2rem}
+
+/* COLLECTION LIGHTBOX */
+.lightbox{display:none;position:fixed;inset:0;z-index:700;background:rgba(10,4,1,.92);backdrop-filter:blur(6px);flex-direction:column}
+.lightbox.open{display:flex}
+.lightbox-header{padding:1.5rem 2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(232,168,124,.1);flex-shrink:0}
+.lightbox-title{font-family:'Playfair Display',serif;font-size:1.6rem;color:#F2E8DC;font-style:italic}
+.lightbox-close{background:none;border:1px solid rgba(232,168,124,.3);color:var(--peach);padding:.5rem 1.2rem;border-radius:4px;cursor:pointer;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;transition:all .2s;font-family:'DM Sans',sans-serif}
+.lightbox-close:hover{background:var(--rust);color:#FFFDF9;border-color:var(--rust)}
+.lightbox-body{flex:1;overflow-y:auto;padding:2rem}
+.lightbox-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1.2rem;max-width:1100px;margin:0 auto}
+.lightbox-card{border-radius:4px;overflow:hidden;background:var(--card-bg);transition:transform .25s;cursor:default}
+.lightbox-card:hover{transform:translateY(-4px)}
+.lightbox-card img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block}
+.lightbox-card-info{padding:.7rem .9rem}
+.lightbox-card-name{font-size:.85rem;font-weight:500;color:var(--text);transition:color .35s}
+.lightbox-card-sub{font-size:.72rem;color:var(--terra);margin-top:.15rem}
+
+/* CONTACT */
+.contact{padding:6rem 3rem;text-align:center;background:#1A0F08;position:relative;overflow:hidden}
+[data-theme="light"] .contact{background:#2E1A0C}
+.contact h2{font-family:'Playfair Display',serif;font-size:2.5rem;color:#F2E8DC;margin-bottom:1rem;position:relative;z-index:2}
+.contact p{font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:rgba(232,216,192,.7);margin-bottom:2.5rem;position:relative;z-index:2}
+.contact-btn{display:inline-block;padding:1rem 3rem;border:1px solid rgba(232,168,124,.4);color:var(--peach);text-decoration:none;font-size:.8rem;letter-spacing:.18em;text-transform:uppercase;transition:all .2s}
+.contact-btn:hover{background:var(--rust);color:#FFFDF9;border-color:var(--rust)}
+.contact-stars{position:absolute;inset:0;pointer-events:none}
+footer{background:#120A04;border-top:1px solid rgba(232,168,124,.08);padding:1.5rem 3rem;display:flex;align-items:center;justify-content:space-between}
+footer p{font-size:.75rem;color:rgba(232,216,192,.35);letter-spacing:.06em}
+
+/* MODALS */
+.modal-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(10,4,1,.75);backdrop-filter:blur(5px);align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--modal-bg);border-radius:8px;width:100%;max-width:500px;padding:2.5rem;position:relative;box-shadow:0 24px 60px var(--shadow);border:1px solid var(--border);transition:background .35s}
+.modal h2{font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--text);margin-bottom:.4rem}
+.modal-sub{font-size:.85rem;color:var(--terra);margin-bottom:1.5rem}
+.modal-close{position:absolute;top:1rem;right:1.2rem;background:none;border:none;font-size:1.4rem;color:var(--peach);cursor:pointer}
+.modal-close:hover{color:var(--rust)}
+.form-group{margin-bottom:1.2rem}
+.form-group label{display:block;font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;color:var(--terra);margin-bottom:.4rem}
+.form-group input,.form-group select{width:100%;padding:.7rem 1rem;border:1px solid var(--border-accent);border-radius:4px;background:var(--input-bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;transition:border .2s,background .35s,color .35s}
+.form-group input:focus,.form-group select:focus{border-color:var(--rust)}
+.form-group input[type="password"]{letter-spacing:.2em}
+.btn-primary{width:100%;padding:.85rem;background:var(--rust);color:#FFFDF9;border:none;border-radius:4px;font-family:'DM Sans',sans-serif;font-size:.85rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:background .2s}
+.btn-primary:hover{background:var(--text)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.error-msg{color:#e05050;font-size:.8rem;margin-top:.5rem;display:none}
+
+/* UPLOAD */
+.upload-zone{border:2px dashed var(--border-accent);border-radius:8px;padding:2.5rem;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:1.2rem;position:relative;background:var(--input-bg)}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--rust);background:rgba(196,86,42,.05)}
+.upload-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-zone-icon{font-size:2.2rem;color:var(--peach);margin-bottom:.6rem}
+.upload-zone-title{font-size:.9rem;color:var(--terra);margin-bottom:.3rem;font-weight:500}
+.upload-zone-sub{font-size:.75rem;color:var(--text-muted)}
+.upload-zone-info{font-size:.75rem;color:var(--terra);margin-top:.5rem;text-align:center}
+.img-preview-wrap{margin-bottom:1.2rem;display:none}
+.img-preview-wrap img{width:100%;max-height:220px;object-fit:cover;border-radius:6px;border:1px solid var(--border-accent);display:block}
+.upload-progress{margin-bottom:1.2rem;display:none}
+.upload-progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:.4rem}
+.upload-progress-fill{height:100%;background:var(--rust);border-radius:3px;width:0%;transition:width .3s}
+.upload-progress-label{font-size:.75rem;color:var(--terra);text-align:center}
+
+/* ADM */
+.adm-panel{display:none;position:fixed;inset:0;z-index:400;background:var(--adm-bg);overflow-y:auto;transition:background .35s}
+.adm-panel.open{display:block}
+.adm-header{background:#120A04;padding:1.5rem 3rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;border-bottom:1px solid rgba(232,168,124,.1)}
+.adm-header h2{font-family:'Playfair Display',serif;color:#F2E8DC;font-size:1.4rem}
+.adm-close{background:none;border:1px solid rgba(232,168,124,.3);color:var(--peach);padding:.5rem 1.2rem;border-radius:4px;cursor:pointer;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;transition:all .2s;font-family:'DM Sans',sans-serif}
+.adm-close:hover{background:var(--rust);color:#FFFDF9;border-color:var(--rust)}
+.adm-body{max-width:1100px;margin:0 auto;padding:3rem}
+.adm-section-title{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--text);margin-bottom:1.5rem;padding-bottom:.75rem;border-bottom:1px solid var(--border-accent)}
+.adm-form{background:var(--adm-form-bg);border-radius:8px;padding:2rem;margin-bottom:3rem;border:1px solid var(--border);transition:background .35s}
+.adm-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.adm-form-full{grid-column:1/-1}
+.tags-check{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:.5rem}
+.tag-check{display:flex;align-items:center;gap:.4rem}
+.tag-check input[type="checkbox"]{accent-color:var(--rust);width:14px;height:14px;cursor:pointer}
+.tag-check label{font-size:.78rem;color:var(--text);cursor:pointer;white-space:nowrap}
+.collection-fields{background:rgba(196,86,42,.06);border:1px solid var(--border-accent);border-radius:6px;padding:1rem 1.2rem;margin-bottom:1.2rem;display:none}
+.collection-fields.visible{display:block}
+.collection-fields p{font-size:.75rem;color:var(--terra);margin-bottom:.8rem}
+.adm-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1.2rem}
+.adm-card{background:var(--adm-card-bg);border-radius:8px;overflow:hidden;border:1px solid var(--border);transition:background .35s}
+.adm-card img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block}
+.adm-card-body{padding:.8rem 1rem}
+.adm-card-title{font-size:.85rem;font-weight:500;color:var(--text);margin-bottom:.3rem}
+.adm-card-sub{font-size:.75rem;color:var(--terra);margin-bottom:.5rem}
+.adm-card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:.8rem}
+.adm-card-tag{font-size:.65rem;padding:2px 8px;background:rgba(196,86,42,.12);color:var(--rust);border-radius:2rem}
+.adm-card-actions{display:flex;gap:.5rem}
+.adm-btn-sm{flex:1;padding:.4rem;font-size:.72rem;letter-spacing:.05em;text-transform:uppercase;border:none;border-radius:4px;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+.adm-btn-edit{background:rgba(196,86,42,.12);color:var(--rust)}
+.adm-btn-edit:hover{background:var(--rust);color:#FFFDF9}
+.adm-btn-del{background:rgba(192,57,43,.1);color:#e05050}
+.adm-btn-del:hover{background:#c0392b;color:#FFFDF9}
+.edit-modal{display:none;position:fixed;inset:0;z-index:600;background:rgba(10,4,1,.75);backdrop-filter:blur(5px);align-items:center;justify-content:center}
+.edit-modal.open{display:flex}
+.edit-modal .modal{max-width:560px;max-height:90vh;overflow-y:auto}
+.cloud-info{background:rgba(196,86,42,.07);border:1px solid var(--border-accent);border-radius:6px;padding:.8rem 1.1rem;margin-bottom:1.4rem;font-size:.78rem;color:var(--terra);line-height:1.6}
+.cloud-info strong{color:var(--rust)}
+
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:768px){
+  nav{padding:1rem 1.5rem}.nav-links{gap:.8rem}
+  .about{padding:4rem 1.5rem}
+  .portfolio-grid,.lightbox-grid{grid-template-columns:repeat(2,1fr)}
+  .portfolio,.contact{padding:4rem 1.5rem}
+  footer{flex-direction:column;gap:.5rem;text-align:center}
+  .adm-body{padding:1.5rem}.adm-form-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Henricco Moretti</div>
+  <div class="nav-links">
+    <a href="#sobre">Sobre</a>
+    <a href="#portfolio">Estampas</a>
+    <a href="#contato">Contato</a>
+    <button class="theme-toggle" id="themeToggle" title="Alternar tema">
+      <span class="icon-sun">☀️</span><span class="icon-moon">🌙</span>
+    </button>
+    <a href="#" class="adm-btn" id="admNavBtn">ADM</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-bg"></div>
+  <svg class="stars-bg" viewBox="0 0 1200 700" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+    <g fill="none" stroke="#C4562A" stroke-width="1.5" opacity="0.18">
+      <g transform="translate(80,120)"><line x1="-10" x2="10" y1="0" y2="0"/><line x1="0" y1="-10" y2="10" x2="0"/></g>
+      <g transform="translate(1100,80)"><line x1="-8" x2="8" y1="0" y2="0"/><line x1="0" y1="-8" y2="8" x2="0"/></g>
+      <g transform="translate(200,580)"><line x1="-12" x2="12" y1="0" y2="0"/><line x1="0" y1="-12" y2="12" x2="0"/></g>
+      <g transform="translate(980,600)"><line x1="-9" x2="9" y1="0" y2="0"/><line x1="0" y1="-9" y2="9" x2="0"/></g>
+      <g transform="translate(600,50)"><line x1="-7" x2="7" y1="0" y2="0"/><line x1="0" y1="-7" y2="7" x2="0"/></g>
+      <g transform="translate(1150,350)"><line x1="-11" x2="11" y1="0" y2="0"/><line x1="0" y1="-11" y2="11" x2="0"/></g>
+    </g>
+    <g fill="#D97840" opacity="0.12">
+      <circle cx="140" cy="220" r="3"/><circle cx="1050" cy="180" r="2.5"/>
+      <circle cx="300" cy="480" r="2"/><circle cx="900" cy="500" r="3.5"/>
+      <circle cx="700" cy="150" r="2"/><circle cx="60" cy="550" r="3"/>
+    </g>
+    <g stroke="#E8A87C" stroke-width="1" fill="none" opacity="0.1">
+      <g transform="translate(120,350)"><line x1="-20" x2="20" y1="0" y2="0"/><line x1="0" y1="-20" y2="20" x2="0"/><line x1="-14" x2="14" y1="-14" y2="14"/><line x1="-14" x2="14" y1="14" y2="-14"/></g>
+      <g transform="translate(1070,300)"><line x1="-18" x2="18" y1="0" y2="0"/><line x1="0" y1="-18" y2="18" x2="0"/><line x1="-12" x2="12" y1="-12" y2="12"/><line x1="-12" x2="12" y1="12" y2="-12"/></g>
+    </g>
+  </svg>
+  <div class="hero-content">
+    <div class="hero-badge">Designer de Estampas</div>
+    <h1>Henricco<br><em>Moretti</em></h1>
+    <div class="hero-subtitle">Arte que veste, estampa que encanta</div>
+    <div class="hero-company">Designer Oficial · Canto que Encanta</div>
+    <div class="hero-divider"></div>
+    <p class="hero-desc">Criando padrões e estampas com alma, onde cada traço conta uma história de cor e forma.</p>
+    <a href="#portfolio" class="hero-cta">Ver Estampas →</a>
+    <div class="stripe-row">
+      <span style="background:#4A2E1A"></span><span style="background:#C4562A"></span>
+      <span style="background:#D97840"></span><span style="background:#E8A87C"></span>
+      <span style="background:#E8D5C0"></span><span style="background:#F2C4B0"></span>
+      <span style="background:#E8A0A8"></span>
+    </div>
+  </div>
+</section>
+
+<section class="about" id="sobre">
+  <div class="about-text" style="max-width:680px;margin:0 auto;text-align:center;">
+    <h2>Estampas com <em>propósito</em> e beleza</h2>
+    <p>Sou Henricco Moretti, designer oficial da Canto que Encanta. Minha linguagem é feita de padrões, texturas e paletas que carregam identidade e emoção.</p>
+    <p>Cada estampa que crio nasce da observação do mundo — da natureza, da arquitetura, das pessoas — e ganha vida através de combinações cromáticas únicas e composições que surpreendem.</p>
+    <p>Acredito que o design de estampas é uma das formas mais íntimas de arte aplicada: ela toca, veste, decora e transforma o cotidiano.</p>
+  </div>
+</section>
+
+<section class="portfolio" id="portfolio">
+  <div class="portfolio-header">
+    <span class="section-label">✦ Criações</span>
+    <h2>Minhas Estampas</h2>
+  </div>
+  <div class="cat-tabs">
+    <button class="cat-tab active" data-cat="todas">Todas</button>
+    <button class="cat-tab" data-cat="colecao">Coleção</button>
+    <button class="cat-tab" data-cat="barrados">Barrados</button>
+    <button class="cat-tab" data-cat="jogos-americanos">Jogos Americanos</button>
+    <button class="cat-tab" data-cat="jogos-sousplat">Jogos Sousplat</button>
+    <button class="cat-tab" data-cat="almofadas">Almofadas</button>
+    <button class="cat-tab" data-cat="corridos">Corridos</button>
+    <button class="cat-tab" data-cat="toalhas-mesa">Toalhas de Mesa</button>
+    <button class="cat-tab" data-cat="toalhas-redonda">Toalhas Redonda</button>
+    <button class="cat-tab" data-cat="trilhos-mesa">Trilhos de Mesa</button>
+    <button class="cat-tab" data-cat="aventais">Aventais</button>
+  </div>
+  <div class="portfolio-grid" id="portfolioGrid"></div>
+</section>
+
+<section class="contact" id="contato">
+  <svg class="contact-stars" viewBox="0 0 1200 400" xmlns="http://www.w3.org/2000/svg">
+    <g fill="none" stroke="rgba(232,168,124,0.12)" stroke-width="1">
+      <g transform="translate(100,100)"><line x1="-15" x2="15" y1="0" y2="0"/><line x1="0" y1="-15" y2="15" x2="0"/></g>
+      <g transform="translate(1100,80)"><line x1="-12" x2="12" y1="0" y2="0"/><line x1="0" y1="-12" y2="12" x2="0"/></g>
+      <g transform="translate(200,300)"><line x1="-10" x2="10" y1="0" y2="0"/><line x1="0" y1="-10" y2="10" x2="0"/></g>
+      <g transform="translate(1000,320)"><line x1="-14" x2="14" y1="0" y2="0"/><line x1="0" y1="-14" y2="14" x2="0"/></g>
+    </g>
+  </svg>
+  <h2>Vamos criar juntos?</h2>
+  <p>Estampas sob medida para marcas com personalidade.</p>
+  <div style="display:flex;gap:1.2rem;justify-content:center;flex-wrap:wrap;position:relative;z-index:2;">
+    <a href="https://wa.me/5511940415923" target="_blank" class="contact-btn" style="display:inline-flex;align-items:center;gap:.6rem;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.121 1.532 5.856L.057 23.886a.5.5 0 0 0 .611.61l6.102-1.459A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.894a9.886 9.886 0 0 1-5.031-1.378l-.36-.214-3.733.893.924-3.642-.235-.374A9.866 9.866 0 0 1 2.106 12C2.106 6.533 6.533 2.106 12 2.106c5.466 0 9.894 4.427 9.894 9.894 0 5.466-4.428 9.894-9.894 9.894z"/></svg>
+      WhatsApp
+    </a>
+    <a href="https://instagram.com/Riccomorett1" target="_blank" class="contact-btn" style="display:inline-flex;align-items:center;gap:.6rem;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>
+      @Riccomorett1
+    </a>
+  </div>
+</section>
+
+<footer>
+  <p>© 2025 Henricco Moretti · Canto que Encanta</p>
+  <p style="font-size:.7rem;opacity:.5;">Designer Oficial de Estampas</p>
+</footer>
+
+<!-- COLLECTION LIGHTBOX -->
+<div class="lightbox" id="collectionLightbox">
+  <div class="lightbox-header">
+    <div class="lightbox-title" id="lightboxTitle">Coleção</div>
+    <button class="lightbox-close" id="lightboxClose">✕ Fechar</button>
+  </div>
+  <div class="lightbox-body">
+    <div class="lightbox-grid" id="lightboxGrid"></div>
+  </div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal">
+    <button class="modal-close" id="loginClose">✕</button>
+    <h2>Área ADM</h2>
+    <p class="modal-sub">Digite sua senha para acessar o painel.</p>
+    <div class="form-group">
+      <label>Senha</label>
+      <input type="password" id="loginPw" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <p class="error-msg" id="loginErr">Senha incorreta. Tente novamente.</p>
+    <button class="btn-primary" id="loginBtn">Entrar no Painel</button>
+  </div>
+</div>
+
+<!-- ADM PANEL -->
+<div class="adm-panel" id="admPanel">
+  <div class="adm-header">
+    <h2>✦ Painel ADM — Henricco Moretti</h2>
+    <button class="adm-close" id="admCloseBtn">← Voltar ao Site</button>
+  </div>
+  <div class="adm-body">
+    <div class="adm-section-title">Adicionar Nova Estampa</div>
+    <div class="adm-form">
+      <div class="cloud-info"><strong>☁️ Cloudinary ativo</strong> — imagens enviadas para a nuvem. Sem limite de quantidade!</div>
+
+      <div class="upload-zone" id="addUploadZone">
+        <input type="file" id="addFileInput" accept="image/*">
+        <div class="upload-zone-icon">✦</div>
+        <p class="upload-zone-title">Clique ou arraste a imagem aqui</p>
+        <p class="upload-zone-sub">PNG, JPG, WEBP — enviada para o Cloudinary</p>
+      </div>
+      <div class="upload-progress" id="addProgress">
+        <div class="upload-progress-bar"><div class="upload-progress-fill" id="addProgressFill"></div></div>
+        <p class="upload-progress-label" id="addProgressLabel">Enviando...</p>
+      </div>
+      <div class="img-preview-wrap" id="addPreviewWrap">
+        <img id="addPreviewImg" alt="Preview">
+        <p class="upload-zone-info" id="addSizeInfo"></p>
+      </div>
+
+      <div class="adm-form-grid">
+        <div class="form-group">
+          <label>Nome da Estampa</label>
+          <input type="text" id="addName" placeholder="Ex: Flor do Campo">
+        </div>
+        <div class="form-group">
+          <label>Subtítulo</label>
+          <input type="text" id="addSubtitle" placeholder="Ex: Verão 2025">
+        </div>
+        <div class="form-group adm-form-full">
+          <label>Categorias (#) — marque todas que se aplicam</label>
+          <div class="tags-check" id="addTagsWrap"></div>
+        </div>
+      </div>
+
+      <!-- Collection fields — show when "colecao" checked -->
+      <div class="collection-fields" id="addCollectionFields">
+        <p>✦ Campos da Coleção</p>
+        <div class="adm-form-grid">
+          <div class="form-group">
+            <label>Nome da Coleção</label>
+            <input type="text" id="addColName" placeholder="Ex: Jardim Secreto">
+          </div>
+          <div class="form-group">
+            <label>Esta imagem é a capa?</label>
+            <select id="addColCover">
+              <option value="no">Não — é uma estampa da coleção</option>
+              <option value="yes">Sim — usar como capa da coleção</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="addBtn">Adicionar Estampa ao Portfólio</button>
+    </div>
+
+    <div class="adm-section-title">Estampas Cadastradas</div>
+    <div class="adm-cards" id="admCards"></div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="edit-modal" id="editModal">
+  <div class="modal">
+    <button class="modal-close" id="editClose">✕</button>
+    <h2>Editar Estampa</h2>
+    <input type="hidden" id="editIdx">
+    <div class="upload-zone" style="padding:1.5rem;margin-bottom:1rem;">
+      <input type="file" id="editFileInput" accept="image/*">
+      <div class="upload-zone-icon" style="font-size:1.6rem;">✦</div>
+      <p class="upload-zone-title" style="font-size:.82rem;">Clique para trocar a imagem (opcional)</p>
+    </div>
+    <div class="upload-progress" id="editProgress">
+      <div class="upload-progress-bar"><div class="upload-progress-fill" id="editProgressFill"></div></div>
+      <p class="upload-progress-label" id="editProgressLabel">Enviando...</p>
+    </div>
+    <div class="img-preview-wrap" id="editPreviewWrap">
+      <img id="editPreviewImg" alt="Preview atual">
+    </div>
+    <div class="form-group"><label>Nome</label><input type="text" id="editName"></div>
+    <div class="form-group"><label>Subtítulo</label><input type="text" id="editSubtitle"></div>
+    <div class="form-group">
+      <label>Categorias (#)</label>
+      <div class="tags-check" id="editTagsWrap"></div>
+    </div>
+    <div class="collection-fields" id="editCollectionFields">
+      <p>✦ Campos da Coleção</p>
+      <div class="adm-form-grid">
+        <div class="form-group">
+          <label>Nome da Coleção</label>
+          <input type="text" id="editColName" placeholder="Ex: Jardim Secreto">
+        </div>
+        <div class="form-group">
+          <label>Esta imagem é a capa?</label>
+          <select id="editColCover">
+            <option value="no">Não — é uma estampa da coleção</option>
+            <option value="yes">Sim — usar como capa da coleção</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <button class="btn-primary" id="saveEditBtn">Salvar Alterações</button>
+  </div>
+</div>
+
+<script>
+const CLOUD_NAME    = 'dowsbivlo';
+const UPLOAD_PRESET = 'Ricco portfolio';
+const PASSWORD_HASH = 'f05383d459d5e0fd3f24bcfd1900540fccbf376fa8b7b9547dfbe8d22a385a06';
+
+async function hashString(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// DARK MODE
+const html = document.documentElement;
+html.setAttribute('data-theme', localStorage.getItem('hm_theme') || 'light');
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('hm_theme', next);
+});
+
+// CATS
+const CATS = [
+  {id:'colecao',label:'Coleção'},{id:'barrados',label:'Barrados'},
+  {id:'jogos-americanos',label:'Jogos Americanos'},{id:'jogos-sousplat',label:'Jogos Sousplat'},
+  {id:'almofadas',label:'Almofadas'},{id:'corridos',label:'Corridos'},
+  {id:'toalhas-mesa',label:'Toalhas de Mesa'},{id:'toalhas-redonda',label:'Toalhas Redonda'},
+  {id:'trilhos-mesa',label:'Trilhos de Mesa'},{id:'aventais',label:'Aventais'}
+];
+const catLabel = id => CATS.find(c=>c.id===id)?.label || id;
+
+// STATE
+let stamps = [];
+let currentCat = 'todas';
+let pendingAddUrl = null;
+let pendingEditUrl = null;
+
+function loadStamps() { try { stamps = JSON.parse(localStorage.getItem('hm_stamps_cloud')||'[]'); } catch(e) { stamps=[]; } }
+function saveStamps() { localStorage.setItem('hm_stamps_cloud', JSON.stringify(stamps)); }
+
+// CLOUDINARY UPLOAD
+async function uploadToCloudinary(file, fillId, labelId, wrapId) {
+  const wrap = document.getElementById(wrapId);
+  const fill = document.getElementById(fillId);
+  const label = document.getElementById(labelId);
+  wrap.style.display = 'block';
+  fill.style.width = '0%';
+  label.textContent = 'Enviando para Cloudinary...';
+  return new Promise((resolve, reject) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', UPLOAD_PRESET);
+    fd.append('folder', 'ricco-portfolio');
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`);
+    xhr.upload.addEventListener('progress', e => {
+      if (e.lengthComputable) {
+        const p = Math.round((e.loaded/e.total)*90);
+        fill.style.width = p+'%';
+        label.textContent = `Enviando... ${p}%`;
+      }
+    });
+    xhr.onload = () => {
+      if (xhr.status===200) {
+        const r = JSON.parse(xhr.responseText);
+        fill.style.width = '100%';
+        label.textContent = '✦ Upload concluído!';
+        setTimeout(()=>{ wrap.style.display='none'; }, 1500);
+        resolve(r.secure_url);
+      } else {
+        wrap.style.display='none';
+        reject(new Error('Erro '+xhr.status));
+      }
+    };
+    xhr.onerror = () => { wrap.style.display='none'; reject(new Error('Erro de conexão.')); };
+    xhr.send(fd);
+  });
+}
+
+// RENDER GRID
+function renderGrid() {
+  const grid = document.getElementById('portfolioGrid');
+  grid.innerHTML = '';
+
+  if (currentCat === 'colecao') {
+    // Group stamps by collection name (only those with colName)
+    const colMap = {};
+    stamps.filter(s=>(s.tags||[]).includes('colecao') && s.colName).forEach(s => {
+      if (!colMap[s.colName]) colMap[s.colName] = [];
+      colMap[s.colName].push(s);
+    });
+    const colNames = Object.keys(colMap);
+    if (!colNames.length) {
+      grid.innerHTML = '<div class="no-results">Nenhuma coleção cadastrada ainda.</div>';
+      return;
+    }
+    colNames.forEach(name => {
+      const items = colMap[name];
+      const cover = items.find(s=>s.colCover==='yes') || items[0];
+      const div = document.createElement('div');
+      div.className = 'collection-cover';
+      div.innerHTML = `
+        <span class="cov-count">${items.length} estampa${items.length>1?'s':''}</span>
+        <img class="cov-img" src="${cover.img}" alt="${name}" loading="lazy">
+        <div class="cov-overlay">
+          <h3>${name}</h3>
+          <p>Ver coleção →</p>
+        </div>`;
+      div.addEventListener('click', () => openLightbox(name, items));
+      grid.appendChild(div);
+    });
+    return;
+  }
+
+  const list = currentCat==='todas' ? stamps : stamps.filter(s=>(s.tags||[]).includes(currentCat));
+  if (!list.length) { grid.innerHTML='<div class="no-results">Nenhuma estampa nesta categoria ainda.</div>'; return; }
+  list.forEach(s => {
+    const tagHtml = (s.tags||[]).map(t=>`<span class="card-tag">#${catLabel(t)}</span>`).join('');
+    const div = document.createElement('div');
+    div.className = 'portfolio-card';
+    div.innerHTML = `<div class="card-pattern"><img src="${s.img}" alt="${s.name}" loading="lazy"></div>
+      <div class="card-overlay"><h3>${s.name}</h3><p>${s.subtitle||''}</p><div class="card-tags">${tagHtml}</div></div>`;
+    grid.appendChild(div);
+  });
+}
+
+// LIGHTBOX
+function openLightbox(name, items) {
+  document.getElementById('lightboxTitle').textContent = name;
+  const grid = document.getElementById('lightboxGrid');
+  grid.innerHTML = '';
+  items.forEach(s => {
+    const div = document.createElement('div');
+    div.className = 'lightbox-card';
+    div.innerHTML = `<img src="${s.img}" alt="${s.name}" loading="lazy">
+      <div class="lightbox-card-info">
+        <div class="lightbox-card-name">${s.name}</div>
+        <div class="lightbox-card-sub">${s.subtitle||''}</div>
+      </div>`;
+    grid.appendChild(div);
+  });
+  document.getElementById('collectionLightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  document.getElementById('collectionLightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+document.getElementById('collectionLightbox').addEventListener('click', e => {
+  if (e.target === document.getElementById('collectionLightbox')) closeLightbox();
+});
+
+// TABS
+document.querySelectorAll('.cat-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentCat = btn.dataset.cat;
+    document.querySelectorAll('.cat-tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderGrid();
+  });
+});
+
+// TAG CHECKBOXES
+function buildTagChecks(wrapId, prefix) {
+  const wrap = document.getElementById(wrapId);
+  wrap.innerHTML = '';
+  CATS.forEach(c => {
+    const d = document.createElement('div'); d.className='tag-check';
+    d.innerHTML = `<input type="checkbox" id="${prefix}-${c.id}" value="${c.id}"><label for="${prefix}-${c.id}">${c.label}</label>`;
+    wrap.appendChild(d);
+  });
+}
+function getChecked(wrapId) { return Array.from(document.querySelectorAll(`#${wrapId} input:checked`)).map(cb=>cb.value); }
+function setChecked(wrapId, tags) { document.querySelectorAll(`#${wrapId} input`).forEach(cb=>{ cb.checked=(tags||[]).includes(cb.value); }); }
+buildTagChecks('addTagsWrap','add');
+buildTagChecks('editTagsWrap','edit');
+
+// Show/hide collection fields when "colecao" checked
+function watchCollectionCheck(wrapId, fieldsId) {
+  const wrap = document.getElementById(wrapId);
+  wrap.addEventListener('change', () => {
+    const checked = Array.from(wrap.querySelectorAll('input:checked')).map(cb=>cb.value);
+    const fields = document.getElementById(fieldsId);
+    fields.classList.toggle('visible', checked.includes('colecao'));
+  });
+}
+watchCollectionCheck('addTagsWrap','addCollectionFields');
+watchCollectionCheck('editTagsWrap','editCollectionFields');
+
+// LOGIN
+document.getElementById('admNavBtn').addEventListener('click', e => {
+  e.preventDefault();
+  document.getElementById('loginModal').classList.add('open');
+  document.getElementById('loginPw').value = '';
+  document.getElementById('loginErr').style.display = 'none';
+  setTimeout(()=>document.getElementById('loginPw').focus(), 100);
+});
+document.getElementById('loginClose').addEventListener('click', ()=>document.getElementById('loginModal').classList.remove('open'));
+document.getElementById('loginModal').addEventListener('click', e=>{ if(e.target===document.getElementById('loginModal')) document.getElementById('loginModal').classList.remove('open'); });
+document.getElementById('loginPw').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('loginBtn').addEventListener('click', doLogin);
+
+async function doLogin() {
+  const hash = await hashString(document.getElementById('loginPw').value);
+  if (hash===PASSWORD_HASH) {
+    document.getElementById('loginModal').classList.remove('open');
+    openAdm();
+  } else {
+    document.getElementById('loginErr').style.display='block';
+    document.getElementById('loginPw').value='';
+    document.getElementById('loginPw').focus();
+  }
+}
+
+// ADM
+function openAdm() {
+  pendingAddUrl=null;
+  document.getElementById('addPreviewWrap').style.display='none';
+  document.getElementById('addProgress').style.display='none';
+  document.getElementById('addName').value='';
+  document.getElementById('addSubtitle').value='';
+  document.getElementById('addColName').value='';
+  document.getElementById('addColCover').value='no';
+  document.getElementById('addFileInput').value='';
+  document.getElementById('addCollectionFields').classList.remove('visible');
+  document.getElementById('addUploadZone').querySelector('.upload-zone-title').textContent='Clique ou arraste a imagem aqui';
+  setChecked('addTagsWrap',[]);
+  document.getElementById('admPanel').classList.add('open');
+  renderAdmCards();
+}
+document.getElementById('admCloseBtn').addEventListener('click',()=>document.getElementById('admPanel').classList.remove('open'));
+
+// ADD FILE INPUT
+document.getElementById('addFileInput').addEventListener('change', async e=>{
+  const file=e.target.files[0]; if(!file) return;
+  const zone=document.getElementById('addUploadZone');
+  document.getElementById('addBtn').disabled=true;
+  zone.querySelector('.upload-zone-title').textContent='Enviando...';
+  try {
+    const url = await uploadToCloudinary(file,'addProgressFill','addProgressLabel','addProgress');
+    pendingAddUrl=url;
+    document.getElementById('addPreviewWrap').style.display='block';
+    document.getElementById('addPreviewImg').src=url;
+    document.getElementById('addSizeInfo').textContent='✦ Imagem enviada com sucesso!';
+    zone.querySelector('.upload-zone-title').textContent='Imagem enviada! Clique para trocar.';
+  } catch(err) {
+    alert('Erro ao enviar: '+err.message);
+    zone.querySelector('.upload-zone-title').textContent='Clique ou arraste a imagem aqui';
+  }
+  document.getElementById('addBtn').disabled=false;
+});
+
+// Drag & drop
+const addZone=document.getElementById('addUploadZone');
+addZone.addEventListener('dragover',e=>{e.preventDefault();addZone.classList.add('dragover')});
+addZone.addEventListener('dragleave',()=>addZone.classList.remove('dragover'));
+addZone.addEventListener('drop',e=>{
+  e.preventDefault();addZone.classList.remove('dragover');
+  const file=e.dataTransfer.files[0];
+  if(file&&file.type.startsWith('image/')){
+    const dt=new DataTransfer();dt.items.add(file);
+    document.getElementById('addFileInput').files=dt.files;
+    document.getElementById('addFileInput').dispatchEvent(new Event('change'));
+  }
+});
+
+// ADD STAMP
+document.getElementById('addBtn').addEventListener('click',()=>{
+  const name=document.getElementById('addName').value.trim();
+  if(!pendingAddUrl){alert('Selecione e aguarde o upload da imagem.');return;}
+  if(!name){alert('Dê um nome à estampa.');return;}
+  const tags=getChecked('addTagsWrap');
+  const stamp={id:Date.now(),name,subtitle:document.getElementById('addSubtitle').value.trim(),tags,img:pendingAddUrl};
+  if(tags.includes('colecao')){
+    stamp.colName=document.getElementById('addColName').value.trim()||'Sem nome';
+    stamp.colCover=document.getElementById('addColCover').value;
+  }
+  stamps.push(stamp);
+  saveStamps();renderGrid();renderAdmCards();
+  pendingAddUrl=null;
+  document.getElementById('addPreviewWrap').style.display='none';
+  document.getElementById('addName').value='';
+  document.getElementById('addSubtitle').value='';
+  document.getElementById('addColName').value='';
+  document.getElementById('addColCover').value='no';
+  document.getElementById('addFileInput').value='';
+  document.getElementById('addCollectionFields').classList.remove('visible');
+  document.getElementById('addUploadZone').querySelector('.upload-zone-title').textContent='Clique ou arraste a imagem aqui';
+  setChecked('addTagsWrap',[]);
+  alert('✦ Estampa adicionada com sucesso!');
+});
+
+// ADM CARDS
+function renderAdmCards() {
+  const el=document.getElementById('admCards');
+  if(!stamps.length){el.innerHTML='<p style="color:var(--terra);font-size:.9rem;padding:1rem 0;">Nenhuma estampa ainda.</p>';return;}
+  el.innerHTML='';
+  stamps.forEach((s,i)=>{
+    const tagHtml=(s.tags||[]).map(t=>`<span class="adm-card-tag">#${catLabel(t)}</span>`).join('');
+    const colBadge=s.colName?`<div style="font-size:.7rem;color:var(--rust);margin-bottom:.3rem;">✦ ${s.colName}${s.colCover==='yes'?' · Capa':''}</div>`:'';
+    const card=document.createElement('div');
+    card.className='adm-card';
+    card.innerHTML=`<img src="${s.img}" alt="${s.name}" loading="lazy">
+      <div class="adm-card-body">
+        ${colBadge}
+        <div class="adm-card-title">${s.name}</div>
+        <div class="adm-card-sub">${s.subtitle||''}</div>
+        <div class="adm-card-tags">${tagHtml}</div>
+        <div class="adm-card-actions">
+          <button class="adm-btn-sm adm-btn-edit" data-i="${i}">Editar</button>
+          <button class="adm-btn-sm adm-btn-del" data-i="${i}">Excluir</button>
+        </div>
+      </div>`;
+    el.appendChild(card);
+  });
+  el.querySelectorAll('.adm-btn-edit').forEach(btn=>btn.addEventListener('click',()=>openEdit(+btn.dataset.i)));
+  el.querySelectorAll('.adm-btn-del').forEach(btn=>btn.addEventListener('click',()=>deleteStamp(+btn.dataset.i)));
+}
+
+function deleteStamp(i){
+  if(!confirm(`Excluir "${stamps[i].name}"?`)) return;
+  stamps.splice(i,1);saveStamps();renderGrid();renderAdmCards();
+}
+
+// EDIT
+function openEdit(i){
+  const s=stamps[i];
+  pendingEditUrl=null;
+  document.getElementById('editIdx').value=i;
+  document.getElementById('editName').value=s.name;
+  document.getElementById('editSubtitle').value=s.subtitle||'';
+  document.getElementById('editFileInput').value='';
+  document.getElementById('editProgress').style.display='none';
+  document.getElementById('editPreviewWrap').style.display='block';
+  document.getElementById('editPreviewImg').src=s.img;
+  setChecked('editTagsWrap',s.tags||[]);
+  const colFields=document.getElementById('editCollectionFields');
+  if((s.tags||[]).includes('colecao')){
+    colFields.classList.add('visible');
+    document.getElementById('editColName').value=s.colName||'';
+    document.getElementById('editColCover').value=s.colCover||'no';
+  } else {
+    colFields.classList.remove('visible');
+  }
+  document.getElementById('editModal').classList.add('open');
+}
+document.getElementById('editClose').addEventListener('click',()=>document.getElementById('editModal').classList.remove('open'));
+document.getElementById('editModal').addEventListener('click',e=>{if(e.target===document.getElementById('editModal'))document.getElementById('editModal').classList.remove('open');});
+document.getElementById('editFileInput').addEventListener('change',async e=>{
+  const file=e.target.files[0];if(!file)return;
+  document.getElementById('saveEditBtn').disabled=true;
+  try{
+    const url=await uploadToCloudinary(file,'editProgressFill','editProgressLabel','editProgress');
+    pendingEditUrl=url;
+    document.getElementById('editPreviewWrap').style.display='block';
+    document.getElementById('editPreviewImg').src=url;
+  }catch(err){alert('Erro ao enviar: '+err.message);}
+  document.getElementById('saveEditBtn').disabled=false;
+});
+document.getElementById('saveEditBtn').addEventListener('click',()=>{
+  const i=+document.getElementById('editIdx').value;
+  const name=document.getElementById('editName').value.trim();
+  if(!name){alert('Nome não pode ser vazio.');return;}
+  const tags=getChecked('editTagsWrap');
+  stamps[i]={...stamps[i],name,subtitle:document.getElementById('editSubtitle').value.trim(),tags};
+  if(pendingEditUrl) stamps[i].img=pendingEditUrl;
+  if(tags.includes('colecao')){
+    stamps[i].colName=document.getElementById('editColName').value.trim()||'Sem nome';
+    stamps[i].colCover=document.getElementById('editColCover').value;
+  } else {
+    delete stamps[i].colName;
+    delete stamps[i].colCover;
+  }
+  saveStamps();renderGrid();renderAdmCards();
+  document.getElementById('editModal').classList.remove('open');
+});
+
+// INIT
+loadStamps();
+renderGrid();
+</script>
+</body>
+</html>
