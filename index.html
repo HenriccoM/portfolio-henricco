@@ -420,9 +420,9 @@ footer p{font-size:.75rem;color:rgba(232,216,192,.35);letter-spacing:.06em}
     <button class="modal-close" id="editClose">✕</button>
     <h2>Editar Estampa</h2>
     <input type="hidden" id="editIdx">
-    <div class="upload-zone" style="padding:1.5rem;margin-bottom:1rem;">
+    <div class="upload-zone" id="editUploadZone" style="padding:1.5rem;margin-bottom:1rem;cursor:pointer;">
       <div class="upload-zone-icon" style="font-size:1.6rem;">✦</div>
-      <p class="upload-zone-title" style="font-size:.82rem;">Clique para trocar a imagem (opcional)</p>
+      <p class="upload-zone-title" id="editUploadTitle" style="font-size:.82rem;">Clique para trocar a imagem (opcional)</p>
     </div>
     <div class="img-preview-wrap" id="editPreviewWrap">
       <img id="editPreviewImg" alt="Preview atual">
@@ -722,7 +722,10 @@ document.getElementById('addUploadZone').addEventListener('drop', e => {
   const file = e.dataTransfer.files[0];
   if (file && file.type.startsWith('image/')) handleAddFile(file);
 });
-addFileInput.addEventListener('change', e => { if (e.target.files[0]) handleAddFile(e.target.files[0]); });
+addFileInput.addEventListener('change', e => {
+  if (e.target.files[0]) handleAddFile(e.target.files[0]);
+  addFileInput.value = ''; // reset so same file can be selected again
+});
 
 async function handleAddFile(file) {
   const zone = document.getElementById('addUploadZone');
@@ -834,17 +837,28 @@ document.getElementById('editModal').addEventListener('click',e=>{if(e.target===
 const editFileInput = document.createElement('input');
 editFileInput.type = 'file'; editFileInput.accept = 'image/*'; editFileInput.style.display = 'none';
 document.body.appendChild(editFileInput);
-document.getElementById('editUploadZone').addEventListener('click', () => editFileInput.click());
+
+document.getElementById('editUploadZone').addEventListener('click', () => {
+  editFileInput.value = ''; // reset so same file can be selected again
+  editFileInput.click();
+});
+
 editFileInput.addEventListener('change', async e => {
   const file = e.target.files[0]; if (!file) return;
   const saveBtn = document.getElementById('saveEditBtn');
+  const titleEl = document.getElementById('editUploadTitle');
   saveBtn.disabled = true;
+  titleEl.textContent = 'Enviando...';
   try {
-    const url = await uploadToCloudinary(file, ()=>{});
+    const url = await uploadToCloudinary(file, (pct, msg) => { titleEl.textContent = msg; });
     pendingEditUrl = url;
     document.getElementById('editPreviewWrap').style.display = 'block';
     document.getElementById('editPreviewImg').src = url;
-  } catch(err) { alert('Erro: ' + err.message); }
+    titleEl.textContent = '✦ Imagem trocada! Clique para trocar novamente.';
+  } catch(err) {
+    alert('Erro: ' + err.message);
+    titleEl.textContent = 'Clique para trocar a imagem (opcional)';
+  }
   saveBtn.disabled = false;
 });
 document.getElementById('saveEditBtn').addEventListener('click',()=>{
