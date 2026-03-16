@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Henricco Moretti — Designer de Estampas</title>
+<script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -360,14 +361,9 @@ footer p{font-size:.75rem;color:rgba(232,216,192,.35);letter-spacing:.06em}
       <div class="cloud-info"><strong>☁️ Cloudinary ativo</strong> — imagens enviadas para a nuvem. Sem limite de quantidade!</div>
 
       <div class="upload-zone" id="addUploadZone">
-        <input type="file" id="addFileInput" accept="image/*">
         <div class="upload-zone-icon">✦</div>
         <p class="upload-zone-title">Clique ou arraste a imagem aqui</p>
         <p class="upload-zone-sub">PNG, JPG, WEBP — enviada para o Cloudinary</p>
-      </div>
-      <div class="upload-progress" id="addProgress">
-        <div class="upload-progress-bar"><div class="upload-progress-fill" id="addProgressFill"></div></div>
-        <p class="upload-progress-label" id="addProgressLabel">Enviando...</p>
       </div>
       <div class="img-preview-wrap" id="addPreviewWrap">
         <img id="addPreviewImg" alt="Preview">
@@ -422,13 +418,8 @@ footer p{font-size:.75rem;color:rgba(232,216,192,.35);letter-spacing:.06em}
     <h2>Editar Estampa</h2>
     <input type="hidden" id="editIdx">
     <div class="upload-zone" style="padding:1.5rem;margin-bottom:1rem;">
-      <input type="file" id="editFileInput" accept="image/*">
       <div class="upload-zone-icon" style="font-size:1.6rem;">✦</div>
       <p class="upload-zone-title" style="font-size:.82rem;">Clique para trocar a imagem (opcional)</p>
-    </div>
-    <div class="upload-progress" id="editProgress">
-      <div class="upload-progress-bar"><div class="upload-progress-fill" id="editProgressFill"></div></div>
-      <p class="upload-progress-label" id="editProgressLabel">Enviando...</p>
     </div>
     <div class="img-preview-wrap" id="editPreviewWrap">
       <img id="editPreviewImg" alt="Preview atual">
@@ -460,9 +451,8 @@ footer p{font-size:.75rem;color:rgba(232,216,192,.35);letter-spacing:.06em}
 </div>
 
 <script>
-const CLOUD_NAME   = 'dowsbivlo';
-const API_KEY      = '866299872832444';
-const API_SECRET   = 'QqAU0Tpem0-usX6Sl9xmRhalalU';
+const CLOUD_NAME    = 'dowsbivlo';
+const UPLOAD_PRESET = 'ricco_portfolio';
 const PASSWORD_HASH = 'f05383d459d5e0fd3f24bcfd1900540fccbf376fa8b7b9547dfbe8d22a385a06';
 
 async function hashString(str) {
@@ -498,54 +488,43 @@ let pendingEditUrl = null;
 function loadStamps() { try { stamps = JSON.parse(localStorage.getItem('hm_stamps_cloud')||'[]'); } catch(e) { stamps=[]; } }
 function saveStamps() { localStorage.setItem('hm_stamps_cloud', JSON.stringify(stamps)); }
 
-// CLOUDINARY UPLOAD — signed upload via API
-async function sha1(str) {
-  const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
-}
-
-async function uploadToCloudinary(file, fillId, labelId, wrapId) {
-  const wrap  = document.getElementById(wrapId);
-  const fill  = document.getElementById(fillId);
-  const label = document.getElementById(labelId);
-  wrap.style.display = 'block';
-  fill.style.width = '0%';
-  label.textContent = 'Preparando imagem...';
-
-  // Build signed params
-  const timestamp = Math.floor(Date.now() / 1000).toString();
-  const folder = 'ricco-portfolio';
-  const toSign = `folder=${folder}&timestamp=${timestamp}${API_SECRET}`;
-  const signature = await sha1(toSign);
-
-  fill.style.width = '20%';
-  label.textContent = 'Enviando para Cloudinary...';
-
-  const fd = new FormData();
-  fd.append('file', file);
-  fd.append('api_key', API_KEY);
-  fd.append('timestamp', timestamp);
-  fd.append('signature', signature);
-  fd.append('folder', folder);
-
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-    method: 'POST',
-    body: fd
+// CLOUDINARY UPLOAD WIDGET
+function openCloudinaryWidget(onSuccess) {
+  const widget = cloudinary.createUploadWidget({
+    cloudName: CLOUD_NAME,
+    uploadPreset: UPLOAD_PRESET,
+    folder: 'ricco-portfolio',
+    sources: ['local','url','camera'],
+    multiple: false,
+    maxFileSize: 15000000,
+    clientAllowedFormats: ['jpg','jpeg','png','webp'],
+    theme: 'minimal',
+    language: 'pt',
+    text: {
+      'pt': {
+        'or': 'ou',
+        'back': 'Voltar',
+        'advanced': 'Avançado',
+        'close': 'Fechar',
+        'no_results': 'Sem resultados',
+        'search_placeholder': 'Pesquisar arquivos',
+        'about_uw': 'Sobre o Widget',
+        'menu': { 'files': 'Meus arquivos', 'web': 'Endereço web', 'camera': 'Câmera' },
+        'local': { 'browse': 'Escolher arquivo', 'dd_title_single': 'Arraste sua imagem aqui', 'drop_title_single': 'Solte para fazer upload' },
+        'crop': { 'title': 'Recortar', 'crop_btn': 'Confirmar', 'skip_btn': 'Usar original', 'reset_btn': 'Resetar', 'close_prompt': 'Fechar cancelará o upload. Tem certeza?', 'image_fallback': 'Esta imagem não pode ser recortada' },
+        'upload_progress': { 'uploading': 'Enviando...', 'processing': 'Processando...', 'complete': 'Concluído!', 'failed': 'Falhou', 'quota_exceeded': 'Cota excedida' }
+      }
+    }
+  }, (error, result) => {
+    if (!error && result && result.event === 'success') {
+      onSuccess(result.info.secure_url);
+      widget.close();
+    }
+    if (error) {
+      alert('Erro no upload: ' + (error.message || error));
+    }
   });
-
-  fill.style.width = '90%';
-
-  if (!res.ok) {
-    wrap.style.display = 'none';
-    const err = await res.json().catch(()=>({}));
-    throw new Error(err.error?.message || 'Erro ' + res.status);
-  }
-
-  const data = await res.json();
-  fill.style.width = '100%';
-  label.textContent = '✦ Upload concluído!';
-  setTimeout(() => { wrap.style.display = 'none'; }, 1500);
-  return data.secure_url;
+  widget.open();
 }
 
 // RENDER GRID
@@ -702,38 +681,15 @@ function openAdm() {
 }
 document.getElementById('admCloseBtn').addEventListener('click',()=>document.getElementById('admPanel').classList.remove('open'));
 
-// ADD FILE INPUT
-document.getElementById('addFileInput').addEventListener('change', async e=>{
-  const file=e.target.files[0]; if(!file) return;
-  const zone=document.getElementById('addUploadZone');
-  document.getElementById('addBtn').disabled=true;
-  zone.querySelector('.upload-zone-title').textContent='Enviando...';
-  try {
-    const url = await uploadToCloudinary(file,'addProgressFill','addProgressLabel','addProgress');
-    pendingAddUrl=url;
+// ADD — open Cloudinary widget on zone click
+document.getElementById('addUploadZone').addEventListener('click', ()=>{
+  openCloudinaryWidget(url => {
+    pendingAddUrl = url;
     document.getElementById('addPreviewWrap').style.display='block';
     document.getElementById('addPreviewImg').src=url;
     document.getElementById('addSizeInfo').textContent='✦ Imagem enviada com sucesso!';
-    zone.querySelector('.upload-zone-title').textContent='Imagem enviada! Clique para trocar.';
-  } catch(err) {
-    alert('Erro ao enviar: '+err.message);
-    zone.querySelector('.upload-zone-title').textContent='Clique ou arraste a imagem aqui';
-  }
-  document.getElementById('addBtn').disabled=false;
-});
-
-// Drag & drop
-const addZone=document.getElementById('addUploadZone');
-addZone.addEventListener('dragover',e=>{e.preventDefault();addZone.classList.add('dragover')});
-addZone.addEventListener('dragleave',()=>addZone.classList.remove('dragover'));
-addZone.addEventListener('drop',e=>{
-  e.preventDefault();addZone.classList.remove('dragover');
-  const file=e.dataTransfer.files[0];
-  if(file&&file.type.startsWith('image/')){
-    const dt=new DataTransfer();dt.items.add(file);
-    document.getElementById('addFileInput').files=dt.files;
-    document.getElementById('addFileInput').dispatchEvent(new Event('change'));
-  }
+    document.getElementById('addUploadZone').querySelector('.upload-zone-title').textContent='Imagem enviada! Clique para trocar.';
+  });
 });
 
 // ADD STAMP
@@ -818,16 +774,12 @@ function openEdit(i){
 }
 document.getElementById('editClose').addEventListener('click',()=>document.getElementById('editModal').classList.remove('open'));
 document.getElementById('editModal').addEventListener('click',e=>{if(e.target===document.getElementById('editModal'))document.getElementById('editModal').classList.remove('open');});
-document.getElementById('editFileInput').addEventListener('change',async e=>{
-  const file=e.target.files[0];if(!file)return;
-  document.getElementById('saveEditBtn').disabled=true;
-  try{
-    const url=await uploadToCloudinary(file,'editProgressFill','editProgressLabel','editProgress');
-    pendingEditUrl=url;
+document.getElementById('editUploadZone').addEventListener('click', ()=>{
+  openCloudinaryWidget(url => {
+    pendingEditUrl = url;
     document.getElementById('editPreviewWrap').style.display='block';
     document.getElementById('editPreviewImg').src=url;
-  }catch(err){alert('Erro ao enviar: '+err.message);}
-  document.getElementById('saveEditBtn').disabled=false;
+  });
 });
 document.getElementById('saveEditBtn').addEventListener('click',()=>{
   const i=+document.getElementById('editIdx').value;
