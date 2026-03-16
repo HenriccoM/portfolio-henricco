@@ -460,8 +460,9 @@ footer p{font-size:.75rem;color:rgba(232,216,192,.35);letter-spacing:.06em}
 </div>
 
 <script>
-const CLOUD_NAME    = 'dowsbivlo';
-const UPLOAD_PRESET = 'Ricco portfolio';
+const CLOUD_NAME   = 'dowsbivlo';
+const API_KEY      = '866299872832444';
+const API_SECRET   = 'QqAU0Tpem0-usX6Sl9xmRhalalU';
 const PASSWORD_HASH = 'f05383d459d5e0fd3f24bcfd1900540fccbf376fa8b7b9547dfbe8d22a385a06';
 
 async function hashString(str) {
@@ -497,7 +498,12 @@ let pendingEditUrl = null;
 function loadStamps() { try { stamps = JSON.parse(localStorage.getItem('hm_stamps_cloud')||'[]'); } catch(e) { stamps=[]; } }
 function saveStamps() { localStorage.setItem('hm_stamps_cloud', JSON.stringify(stamps)); }
 
-// CLOUDINARY UPLOAD — base64 via fetch (bypasses CORS)
+// CLOUDINARY UPLOAD — signed upload via API
+async function sha1(str) {
+  const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
 async function uploadToCloudinary(file, fillId, labelId, wrapId) {
   const wrap  = document.getElementById(wrapId);
   const fill  = document.getElementById(fillId);
@@ -505,25 +511,36 @@ async function uploadToCloudinary(file, fillId, labelId, wrapId) {
   wrap.style.display = 'block';
   fill.style.width = '0%';
   label.textContent = 'Preparando imagem...';
-  const base64 = await new Promise((res, rej) => {
-    const reader = new FileReader();
-    reader.onload = e => res(e.target.result);
-    reader.onerror = rej;
-    reader.readAsDataURL(file);
-  });
-  fill.style.width = '40%';
+
+  // Build signed params
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const folder = 'ricco-portfolio';
+  const toSign = `folder=${folder}&timestamp=${timestamp}${API_SECRET}`;
+  const signature = await sha1(toSign);
+
+  fill.style.width = '20%';
   label.textContent = 'Enviando para Cloudinary...';
+
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('api_key', API_KEY);
+  fd.append('timestamp', timestamp);
+  fd.append('signature', signature);
+  fd.append('folder', folder);
+
   const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ file: base64, upload_preset: UPLOAD_PRESET, folder: 'ricco-portfolio' })
+    body: fd
   });
+
   fill.style.width = '90%';
+
   if (!res.ok) {
     wrap.style.display = 'none';
     const err = await res.json().catch(()=>({}));
     throw new Error(err.error?.message || 'Erro ' + res.status);
   }
+
   const data = await res.json();
   fill.style.width = '100%';
   label.textContent = '✦ Upload concluído!';
