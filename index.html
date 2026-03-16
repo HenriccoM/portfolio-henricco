@@ -642,24 +642,14 @@ async function uploadToCloudinary(file, onProgress) {
   return applyCloudinaryWatermark(data.secure_url);
 }
 
-// CLOUDINARY NATIVE WATERMARK
-// Correct syntax per Cloudinary docs:
-// l_text:font_size:text — opens the text layer
-// a_-25,o_25,co_white,w_0.5,fl_relative — transform the layer
-// fl_tiled.layer_apply — tile + close the layer (must be in same component)
+// CLOUDINARY NATIVE WATERMARK — 65px bold, 80% opacity, tiled diagonal
 function applyCloudinaryWatermark(url) {
   if (!url || !url.includes('res.cloudinary.com')) return url;
   if (url.includes('fl_tiled')) return url; // already applied
-
-  // Step 1: open text layer with styling
-  const layer = 'l_text:Arial_26_bold:Henricco%20Moretti,co_white,o_25,a_-25,w_0.5,fl_relative';
-  // Step 2: tile + apply in same component
-  const apply = 'fl_tiled.layer_apply';
-
-  return url.replace('/upload/', `/upload/${layer}/${apply}/`);
+  const wm = 'l_text:Georgia_65_bold:Henricco%20Moretti,co_white,o_80,a_-20/fl_tiled,fl_layer_apply';
+  return url.replace('/upload/', '/upload/' + wm + '/');
 }
 
-// Wrap for use in rendering
 function wmUrl(url) {
   if (!url) return url;
   if (!url.includes('res.cloudinary.com')) return url;
