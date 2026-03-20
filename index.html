@@ -70,7 +70,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 .about{padding:6rem 3rem;max-width:1100px;margin:0 auto}
 .about-text h2{font-family:'Playfair Display',serif;font-size:2.8rem;line-height:1.1;margin-bottom:1.5rem;color:var(--text)}
 .about-text h2 em{font-style:italic;color:var(--rust)}
-.about-text p{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300;line-height:1.9;color:var(--text);opacity:.7;margin-bottom:1.2rem}
+.about-text p{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:300;line-height:1.9;color:var(--text);opacity:.7;margin-bottom:1.2rem}
 
 /* PORTFOLIO */
 .portfolio{padding:5rem 1.5rem;background:var(--surface);transition:background .35s}
@@ -319,7 +319,7 @@ footer p{font-size:.75rem;color:rgba(232,216,192,.35);letter-spacing:.06em}
     <div class="hero-subtitle">Arte que veste, estampa que encanta</div>
     <div class="hero-company">Designer Oficial · Canto que Encanta</div>
     <div class="hero-divider"></div>
-    <p class="hero-desc">Criando estampas com alma e amor, onde cada traço conta uma história.</p>
+    <p class="hero-desc">Criando padrões e estampas com alma, onde cada traço conta uma história de cor e forma.</p>
     <a href="#portfolio" class="hero-cta">Ver Estampas →</a>
     <div class="stripe-row">
       <span style="background:#4A2E1A"></span><span style="background:#C4562A"></span>
@@ -333,8 +333,8 @@ footer p{font-size:.75rem;color:rgba(232,216,192,.35);letter-spacing:.06em}
 <section class="about" id="sobre">
   <div class="about-text" style="max-width:680px;margin:0 auto;text-align:center;">
     <h2>Estampas com <em>propósito</em> e beleza</h2>
-    <p>Sou Henricco Moretti, designer oficial da Canto que Encanta. Estudo e aprecio a arte desde criança e é nas estampas onde me expresso, usando texturas e paletas que carregam identidade e emoção.</p>
-    <p>Cada estampa que crio nasce da observação do mundo — da natureza, da arquitetura, das pessoas — e ganha vida através de combinações únicas e composições que surpreendem.</p>
+    <p>Sou Henricco Moretti, designer oficial da Canto que Encanta. Minha linguagem é feita de padrões, texturas e paletas que carregam identidade e emoção.</p>
+    <p>Cada estampa que crio nasce da observação do mundo — da natureza, da arquitetura, das pessoas — e ganha vida através de combinações cromáticas únicas e composições que surpreendem.</p>
     <p>Acredito que o design de estampas é uma das formas mais íntimas de arte aplicada: ela toca, veste, decora e transforma o cotidiano.</p>
   </div>
 </section>
@@ -1086,11 +1086,25 @@ async function saveAllStamps() {
   if (!toSave.length) { alert('Nada novo para salvar.'); return; }
   const btn = document.getElementById('saveAllBtn');
   if(btn) { btn.disabled=true; btn.textContent='Salvando...'; }
+
+  // Shift ALL existing stamps order by number of new stamps
+  const shift = toSave.length;
+  stamps.forEach(s => { s.order = (s.order === undefined ? shift : s.order + shift); });
+
+  // Save new stamps with order 0, 1, 2... (newest first)
   for (const [idx, item] of toSave.entries()) {
-    if (!item.name.trim()) { alert(`Dê um nome para a imagem ${idx+1}.`); continue; }
-    stamps.forEach(s => { s.order = (s.order===undefined?1:s.order)+1; });
-    const stamp = { name: item.name.trim(), subtitle: item.subtitle||'', tags: item.tags||[], img: item.url, order: 0 };
-    if ((item.tags||[]).includes('colecao')) { stamp.colName=item.colName||'Sem nome'; stamp.colCover=item.colCover||'no'; }
+    if (!item.name.trim()) continue;
+    const stamp = {
+      name: item.name.trim(),
+      subtitle: item.subtitle || '',
+      tags: item.tags || [],
+      img: item.url,
+      order: idx  // 0 = first new, 1 = second new, etc.
+    };
+    if ((item.tags||[]).includes('colecao')) {
+      stamp.colName = item.colName || 'Sem nome';
+      stamp.colCover = item.colCover || 'no';
+    }
     try {
       const docId = await saveStampToDb(stamp);
       stamp._docId = docId;
@@ -1098,8 +1112,13 @@ async function saveAllStamps() {
       item.saved = true;
     } catch(e) { console.error('Save error:', e); }
   }
+
+  // Update all existing stamps orders in Firebase (batch)
+  try { await saveAllOrders(); } catch(e) { console.error(e); }
+
   cacheStamps(); renderGrid(); renderAdmCards(); renderQueue();
-  alert(`✦ ${toSave.filter(i=>i.saved).length} estampa${toSave.length>1?'s':''} salva${toSave.length>1?'s':''}!`);
+  const saved = toSave.filter(i=>i.saved).length;
+  alert(`✦ ${saved} estampa${saved>1?'s':''} salva${saved>1?'s':''}! Aparecendo no topo.`);
 }
 
 // Clear/reset button
